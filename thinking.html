@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>十月文化 · 内部发包流程构思</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #f5f5f0; --bg-card: #fafaf7;
+            --text-primary: #2c2c2a; --text-secondary: #5c5c58; --text-muted: #8a8a84;
+            --accent: #1a8a7a; --accent-light: #e0f2ef; --accent-mid: #b8dfd8; --accent-dark: #0d6b5e;
+            --accent-gradient: linear-gradient(135deg, #1a8a7a, #0d6b5e);
+            --border: #d8d8d2; --radius: 16px; --radius-sm: 10px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04); --shadow-md: 0 8px 32px rgba(0,0,0,0.06);
+            --shadow-lg: 0 20px 60px rgba(0,0,0,0.08);
+            --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.7; overflow-x: hidden; }
+        ::selection { background: var(--accent); color: #fff; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-mid); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        .bg-decoration { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .bg-decoration .circle { position: absolute; border-radius: 50%; opacity: 0.04; }
+        .bg-decoration .circle:nth-child(1) { width: 600px; height: 600px; background: var(--accent); top: -200px; right: -150px; animation: float 20s ease-in-out infinite; }
+        .bg-decoration .circle:nth-child(2) { width: 400px; height: 400px; background: var(--accent); bottom: 10%; left: -100px; animation: float 25s ease-in-out infinite reverse; }
+        .bg-decoration .circle:nth-child(3) { width: 300px; height: 300px; background: #1a8a7a; bottom: 40%; right: 20%; animation: float 18s ease-in-out infinite 5s; }
+        @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-40px) scale(1.05); } 66% { transform: translate(-20px,20px) scale(0.95); } }
+        .page-wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+        .hero { padding: 80px 0 60px; text-align: center; position: relative; }
+        .hero::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 3px; background: var(--accent-gradient); border-radius: 2px; }
+        .hero__tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 18px; background: var(--accent-light); color: var(--accent-dark); font-size: 13px; font-weight: 500; border-radius: 20px; margin-bottom: 24px; transition: var(--transition); }
+        .hero__tag:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,138,122,0.2); }
+        .hero__tag .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+        @keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+        .hero h1 { font-size: clamp(2rem,5vw,3.2rem); font-weight: 900; letter-spacing: 2px; line-height: 1.3; margin-bottom: 16px; }
+        .hero h1 .highlight { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero__sub { font-size: 1.05rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto 32px; font-weight: 300; }
+        .hero__nav { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .hero__nav a { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); }
+        .hero__nav a:hover { background: var(--accent); border-color: var(--accent); color: #fff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,138,122,0.25); }
+        .section { margin-top: 60px; }
+        .section__header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+        .section__number { flex-shrink: 0; width: 44px; height: 44px; background: var(--accent-gradient); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 16px; box-shadow: 0 4px 14px rgba(26,138,122,0.25); transition: var(--transition); }
+        .section:hover .section__number { transform: scale(1.05) rotate(-3deg); }
+        .section__title { font-size: 1.5rem; font-weight: 700; letter-spacing: 1px; }
+        .section__title .en { display: block; font-size: 0.7rem; font-weight: 300; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+        .section__line { flex: 1; height: 1px; background: var(--border); min-width: 40px; }
+        .info-block { background: var(--accent-light); border-left: 4px solid var(--accent); padding: 24px 28px; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 24px; transition: var(--transition); }
+        .info-block:hover { box-shadow: var(--shadow-sm); transform: translateX(4px); }
+        .info-block p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.8; }
+        .info-block p + p { margin-top: 12px; }
+        .info-block strong { color: var(--accent-dark); }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; transition: var(--transition); cursor: default; position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--accent-gradient); transform: scaleX(0); transform-origin: left; transition: transform 0.5s cubic-bezier(0.22,1,0.36,1); }
+        .card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: transparent; }
+        .card:hover::before { transform: scaleX(1); }
+        .card__icon { width: 48px; height: 48px; border-radius: 14px; background: var(--accent-light); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px; transition: var(--transition); }
+        .card:hover .card__icon { background: var(--accent); color: #fff; transform: scale(1.05) rotate(-5deg); }
+        .card__title { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+        .card__badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-bottom: 12px; background: var(--accent-light); color: var(--accent-dark); }
+        .card p { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7; }
+        .card__tag { display: inline-block; margin-top: 14px; padding: 4px 14px; border-radius: 16px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); color: var(--text-muted); transition: var(--transition); }
+        .card:hover .card__tag { border-color: var(--accent-mid); color: var(--accent-dark); background: var(--accent-light); }
+        .stages-wrapper { margin-bottom: 28px; }
+        .stages-group { margin-bottom: 20px; }
+        .stages-group__label { display: inline-block; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .stages-group__label.asset { background: #e0f2ef; color: #0d6b5e; }
+        .stages-group__label.shot { background: #e8e4f2; color: #5b4d8a; }
+        .stage-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+        .stage-pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; font-size: 14px; font-weight: 500; color: var(--text-primary); transition: var(--transition); cursor: default; }
+        .stage-pill:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(26,138,122,0.15); }
+        .stage-pill .pill-num { width: 24px; height: 24px; border-radius: 8px; background: var(--accent-light); color: var(--accent-dark); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; transition: var(--transition); }
+        .stage-pill:hover .pill-num { background: var(--accent); color: #fff; }
+        .timeline { position: relative; padding-left: 40px; }
+        .timeline::before { content: ''; position: absolute; left: 18px; top: 10px; bottom: 10px; width: 2px; background: var(--border); }
+        .timeline__step { position: relative; padding: 24px 28px; margin-bottom: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); transition: var(--transition); }
+        .timeline__step:hover { transform: translateX(6px); box-shadow: var(--shadow-md); border-color: var(--accent-mid); }
+        .timeline__step::before { content: ''; position: absolute; left: -30px; top: 30px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg-primary); transition: var(--transition); }
+        .timeline__step:hover::before { transform: scale(1.3); box-shadow: 0 0 0 6px rgba(26,138,122,0.15); }
+        .timeline__step .step-num { position: absolute; top: -1px; left: -1px; padding: 4px 14px; background: var(--accent-gradient); color: #fff; font-size: 12px; font-weight: 700; border-radius: var(--radius) 0 var(--radius) 0; }
+        .timeline__step h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; padding-top: 6px; }
+        .timeline__step p { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7; }
+        .timeline__step .step-badge { display: inline-block; margin-top: 10px; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500; background: var(--accent-light); color: var(--accent-dark); }
+        .timeline__step .step-badge.warn { background: #fef3e2; color: #b8860b; }
+        .timeline__step .step-badge.success { background: #e0f2ef; color: #0d6b5e; }
+        .timeline__arrow { position: relative; left: -14px; text-align: center; color: var(--accent); font-size: 20px; line-height: 1; margin: -6px 0 -6px; opacity: 0.5; }
+        .path-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; transition: var(--transition); }
+        .path-card:hover { box-shadow: var(--shadow-md); }
+        .path-card .path-hint { background: var(--accent-light); padding: 14px 18px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 0.92rem; color: var(--text-secondary); border-left: 3px solid var(--accent); }
+        .path-card .path-hint strong { color: var(--accent-dark); }
+        .tree { font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 0.85rem; line-height: 1.9; background: #fcfcf9; border-radius: var(--radius-sm); padding: 20px 16px; overflow-x: auto; white-space: pre; color: var(--text-primary); border: 1px solid var(--border); transition: var(--transition); }
+        .tree:hover { border-color: var(--accent-mid); box-shadow: var(--shadow-sm); }
+        .tree .tree-comment { color: var(--text-muted); font-style: italic; }
+        .tree .tree-folder { color: var(--accent-dark); font-weight: 600; }
+        .tree .tree-file { color: var(--text-primary); }
+        @media (max-width: 768px) { .card-grid { grid-template-columns: 1fr; } .hero { padding: 48px 0 40px; } .timeline { padding-left: 32px; } .timeline__step::before { left: -24px; } }
+        .footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        .footer span { color: var(--accent); }
+    </style>
+</head>
+<body>
+<div class="bg-decoration"><div class="circle"></div><div class="circle"></div><div class="circle"></div></div>
+<div class="page-wrapper">
+<header class="hero">
+<div class="hero__tag"><span class="dot"></span> 内部流程设计文档</div>
+<h1>十月文化<br><span class="highlight">内部发包流程</span>构思</h1>
+<p class="hero__sub">通过搭建自动化检查、分发、处理数据的内部系统，弱化对外包工具的依赖，构建一套即使外部零工具介入也能完整回收外包工作的稳健流程。</p>
+<nav class="hero__nav">
+<a href="#stages">🎯 涉及环节</a><a href="#modules">🧩 功能模块</a><a href="#workflow">🔄 完整流程</a><a href="#path">📁 路径设计</a>
+</nav>
+</header>
+
+<section class="section">
+<div class="section__header"><div class="section__number">✦</div><h2 class="section__title">核心理念<span class="en">Core Philosophy</span></h2><div class="section__line"></div></div>
+<div class="info-block">
+<p><strong>外包商素质良莠不齐</strong>，部分外包商几乎不依赖我方提供的工具也能按时完成任务。因此，从<strong>外部工具强约束</strong>的角度很难统一管控回传行为。</p>
+<p>更稳妥的方式是：<strong>在内部搭建一套尽可能自动化的流程</strong>——自动检查、自动分发、自动处理数据，<strong>弱化内部效率压力</strong>。即使在完全不给外部提供任何工具、只提供制作数据的情况下，也能将外包工作完整地<strong>分发 → 回收 → 审核 → 发布</strong>。</p>
+</div>
+</section>
+
+<section class="section" id="stages">
+<div class="section__header"><div class="section__number">01</div><h2 class="section__title">涉及的发包环节<span class="en">Production Stages</span></h2><div class="section__line"></div></div>
+<div class="stages-wrapper">
+<div class="stages-group"><span class="stages-group__label asset">📦 资产部分</span>
+<div class="stage-pills">
+<div class="stage-pill"><span class="pill-num">M</span> 模型</div><div class="stage-pill"><span class="pill-num">T</span> 材质</div><div class="stage-pill"><span class="pill-num">F</span> 毛发</div><div class="stage-pill"><span class="pill-num">R</span> 绑定</div>
+</div></div>
+<div class="stages-group"><span class="stages-group__label shot">🎬 镜头部分</span>
+<div class="stage-pills">
+<div class="stage-pill"><span class="pill-num">L</span> Layout</div><div class="stage-pill"><span class="pill-num">A</span> Animation</div><div class="stage-pill"><span class="pill-num">E</span> EFX</div><div class="stage-pill"><span class="pill-num">C</span> CFX 解算</div><div class="stage-pill"><span class="pill-num">💡</span> 灯光</div><div class="stage-pill"><span class="pill-num">🎞️</span> 合成</div>
+</div></div>
+</div>
+</section>
+
+<section class="section" id="modules">
+<div class="section__header"><div class="section__number">02</div><h2 class="section__title">功能模块设计<span class="en">System Modules</span></h2><div class="section__line"></div></div>
+<div class="card-grid">
+<div class="card"><div class="card__icon">📡</div><span class="card__badge">部署 Linux</span><h3 class="card__title">传输模块</h3><p>直接部署 <strong>FTPS</strong> 服务，作为所有外包数据上传、下载的底层通道。稳定、加密、易于集成。</p><span class="card__tag"># 基础设施</span></div>
+<div class="card"><div class="card__icon">🗄️</div><span class="card__badge">部署 Linux</span><h3 class="card__title">数据库模块</h3><p>使用 <strong>PostgreSQL</strong> 记录 FTP 文件信息、操作历史、版本标记等核心数据，为所有模块提供持久化支撑。</p><span class="card__tag"># 数据持久化</span></div>
+<div class="card"><div class="card__icon">📂</div><span class="card__badge">Windows 控制端</span><h3 class="card__title">收集模块</h3><p>根据不同的环节，自动收集整理必要的依赖项，上传至 FTPS 共享存储中，供外包人员下载使用。</p><span class="card__tag"># 素材准备</span></div>
+<div class="card"><div class="card__icon">👁️</div><span class="card__badge">Linux 服务</span><h3 class="card__title">版本监控模块</h3><p>无限循环进程持续扫描 FTP 存储空间 &amp; 服务日志，对每一次文件变更<strong>事无巨细地打标记</strong>到数据库——谁上传的、多大、是否覆盖、删除等，自动推进版本号（v001 → v002）。</p><span class="card__tag"># 全量审计</span></div>
+<div class="card"><div class="card__icon">🔐</div><span class="card__badge">Windows 控制端</span><h3 class="card__title">权限分配模块</h3><p>用户管理与实时权限控制。新增外包商时自动在 Shotgun 创建用户、同步 Linux 账户到 FTP，自动生成密码并通过<strong>钉钉</strong>发送连接信息。</p><span class="card__tag"># 账号生命周期</span></div>
+<div class="card"><div class="card__icon">🔀</div><span class="card__badge">Linux 服务</span><h3 class="card__title">行为分配模块</h3><p>监听数据库变化，整合分辨<strong>哪些改动属于同一次</strong>、哪些是他人同时修改，按环节分类整理。待全部改动完毕，将环节行为命令 + 文件信息发送给自动行为模块。</p><span class="card__tag"># 智能路由</span></div>
+<div class="card"><div class="card__icon">🤖</div><span class="card__badge">Linux 服务</span><h3 class="card__title">自动行为模块</h3><p>按环节执行 TD 编写的自定义检查代码：路径规范校验、帧率/帧数检查、自动发布 Daily &amp; 下游、钉钉通知。提供<strong>队列 + 农场节点</strong>机制，耗时任务扔到农场分布式执行。</p><span class="card__tag"># 核心引擎</span></div>
+</div>
+</section>
+
+<section class="section" id="workflow">
+<div class="section__header"><div class="section__number">03</div><h2 class="section__title">理想情况下的完整流程<span class="en">End-to-End Workflow</span></h2><div class="section__line"></div></div>
+<div class="timeline">
+<div class="timeline__step"><span class="step-num">01</span><h4>📋 制片添加外包商 &amp; 分配权限</h4><p>制片在 <strong>十月盒子</strong> 中打开权限分配工具，添加外包商并指定其可查看/下载的文件范围，系统自动创建账户并发送钉钉通知。</p><span class="step-badge">权限分配模块</span></div>
+<div class="timeline__arrow">↓</div>
+<div class="timeline__step"><span class="step-num">02</span><h4>📦 制片收集资产 &amp; 发送至 FTP</h4><p>制片在十月盒子中使用资产收集工具，半自动找到所有参考数据。点击确定后，工具自动将收集的数据发送至 FTP 存储路径下。</p><span class="step-badge">收集模块</span></div>
+<div class="timeline__arrow">↓</div>
+<div class="timeline__step"><span class="step-num">03</span><h4>🔁 外包商按规范回传审核数据</h4><p>外包商制作完毕后，按照不同环节的<strong>路径规范</strong>向 FTP 中回传审核数据（含 manifest.json 等必要信息）。</p><span class="step-badge success">外包商操作</span></div>
+<div class="timeline__arrow">↓</div>
+<div class="timeline__step"><span class="step-num">04</span><h4>🔍 自动监测 → 分配 → 检查</h4><p><strong>版本监控模块</strong>识别新文件 → <strong>行为分配模块</strong>等待上传完毕并打包信息 → <strong>自动行为模块</strong>识别环节，按 TD 指令开始检查并发布。</p><span class="step-badge">全链路自动</span></div>
+<div class="timeline__arrow">↓</div>
+<div class="timeline__step"><span class="step-num">05</span><h4>⚠️ 异常处理：检查不通过</h4><p><strong>程序运行错误</strong> → 钉钉通知 TD 报错内容。<br><strong>文件检查错误</strong> → 钉钉通知外包商审核不通过及原因，同时通知相应环节制片。</p><span class="step-badge warn">异常分支</span></div>
+<div class="timeline__arrow">↓</div>
+<div class="timeline__step"><span class="step-num">06</span><h4>✅ 重新回传 &amp; 检查通过</h4><p>外包商修正后重新向 FTP 回传 → 自动流再次进入 <strong>自动行为模块</strong> 检查。通过后通知制片，按需发布至 Shotgun，同时向外包商提示回传成功。</p><span class="step-badge success">外包商操作</span>&emsp;<span class="step-badge">全链路自动</span></div>
+<div class="timeline__arrow">↓</div>
+<div class="timeline__step"><span class="step-num">07</span><h4>🚀 最终发布 &amp; 通知</h4><p>外包商提交最终工程文件 / 数据缓存 / 预览图片等。系统根据 manifest 信息触发<strong>自动发布下游程序</strong>，使用 CLI 全自动检查发布。无论成功与否，均通过钉钉通知外包商和制片。</p><span class="step-badge">最终交付</span>&emsp;<span class="step-badge success">外包商操作</span>&emsp;<span class="step-badge">全链路自动</span></div>
+</div>
+</section>
+
+<section class="section" id="path">
+<div class="section__header"><div class="section__number">04</div><h2 class="section__title">FTPS 路径层级设计<span class="en">Directory Structure</span></h2><div class="section__line"></div></div>
+<div class="path-card">
+<div class="path-hint"><strong>📌 要求：</strong>所有外包回传文件（审核用预览视频/图片除外）必须在其 <strong>project</strong> 目录内包含 <strong>manifest.json</strong> 文件，用于记录必要的元信息。</div>
+<div class="tree">./root
+ ├─ <span class="tree-folder">oct/</span>
+ │  ├─ <span class="tree-folder">mk2/</span>
+ │  │  ├─ <span class="tree-folder">shot/</span>
+ │  │  │  ├─ <span class="tree-folder">s03/</span>
+ │  │  │  └─ <span class="tree-folder">s04/</span>
+ │  │  │     └─ <span class="tree-folder">s040040/</span>
+ │  │  │        ├─ <span class="tree-folder">asb/</span>
+ │  │  │        ├─ <span class="tree-folder">lay/</span>
+ │  │  │        ├─ <span class="tree-folder">ani/</span>
+ │  │  │        └─ <span class="tree-comment">...</span>
+ │  │  └─ <span class="tree-folder">asset/</span>
+ │  │     ├─ <span class="tree-folder">chr/</span>
+ │  │     │  └─ <span class="tree-folder">dagui_c/</span>
+ │  │     │     ├─ <span class="tree-folder">asb/</span>
+ │  │     │     │  └─ <span class="tree-file">dagui_c.usda</span>
+ │  │     │     ├─ <span class="tree-folder">art/</span>
+ │  │     │     ├─ <span class="tree-folder">mod/</span>
+ │  │     │     │  └─ <span class="tree-folder">dagui_c.mod.model/</span>
+ │  │     │     │     ├─ <span class="tree-file">dagui_c.ma</span>
+ │  │     │     │     ├─ <span class="tree-file">mesh.xml</span>
+ │  │     │     │     └─ <span class="tree-folder">usd/</span>
+ │  │     │     │        ├─ <span class="tree-file">comp.usda</span>
+ │  │     │     │        └─ <span class="tree-file">high.usd</span>
+ │  │     │     ├─ <span class="tree-folder">rig/</span>
+ │  │     │     ├─ <span class="tree-folder">tex/</span>
+ │  │     │     └─ <span class="tree-folder">fur/</span>
+ │  │     ├─ <span class="tree-folder">asb/</span>
+ │  │     └─ <span class="tree-folder">prp/</span>
+ │  └─ <span class="tree-comment">...</span>
+ │
+ ├─ <span class="tree-folder">vender01/</span>
+ │  ├─ <span class="tree-folder">dagui_g/</span>
+ │  │  └─ <span class="tree-folder">mod/</span>
+ │  │     ├─ <span class="tree-folder">preview/</span>
+ │  │     │  ├─ <span class="tree-file">xxxx.png</span>
+ │  │     │  └─ <span class="tree-file">xxx.mov</span>
+ │  │     └─ <span class="tree-folder">project/</span>
+ │  │        ├─ <span class="tree-file">manifest.json</span>
+ │  │        ├─ <span class="tree-folder">images/</span>
+ │  │        └─ <span class="tree-file">dagui_g.ma</span>
+ │  ├─ <span class="tree-folder">tex/</span>
+ │  ├─ <span class="tree-folder">fur/</span>
+ │  └─ <span class="tree-folder">rig/</span>
+ │  └─ <span class="tree-folder">s060050/</span>
+ │     ├─ <span class="tree-folder">lay/</span>
+ │     │  ├─ <span class="tree-folder">preview/</span>
+ │     │  │  └─ <span class="tree-file">xxxx.mov</span>
+ │     │  └─ <span class="tree-folder">project/</span>
+ │     │     ├─ <span class="tree-file">manifest.json</span>
+ │     │     └─ <span class="tree-file">s050060.lay.rough_layout.v018.ma</span>
+ │     ├─ <span class="tree-folder">ani/</span>
+ │     ├─ <span class="tree-folder">efx/</span>
+ │     ├─ <span class="tree-folder">cfx/</span>
+ │     ├─ <span class="tree-folder">lgt/</span>
+ │     └─ <span class="tree-folder">cmp/</span>
+ │
+ └─ <span class="tree-folder">vender02/</span>
+    └─ <span class="tree-comment">...</span></div>
+</div>
+</section>
+
+<footer class="footer">
+<p>十月文化 · 内部流程设计 &nbsp;|&nbsp; <span>✦</span> 本文档基于内部构思整理而成</p>
+</footer>
+</div>
+</body>
+</html>
