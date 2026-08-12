@@ -3,8 +3,14 @@ FROM debian:bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends vsftpd \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /srv/ftp /var/log/vsftpd /etc/vsftpd /var/run/vsftpd/empty
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建固定的运行目录
+RUN mkdir -p \
+    /srv/ftp \
+    /var/log/vsftpd \
+    /etc/vsftpd \
+    /var/run/vsftpd/empty
 
 COPY vsftpd.conf /etc/vsftpd/vsftpd.conf
 COPY entrypoint.sh /entrypoint.sh
