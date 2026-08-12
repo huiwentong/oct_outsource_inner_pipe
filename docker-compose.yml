@@ -7,9 +7,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: versionwatch
-      POSTGRES_PASSWORD: versionwatch
-      POSTGRES_DB: versionwatch
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: outsource_inner_pipe
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,24 +19,24 @@ services:
       retries: 12
     restart: unless-stopped
 
-  versionwatch:
-    build:
-      context: .
-      dockerfile: docker/versionwatch.Dockerfile
-    environment:
-      VW_ROOT_DIR: /srv/ftp
-      VW_FTP_LOG: /var/log/vsftpd/vsftpd.log
-      VW_DATABASE_URL: postgresql://versionwatch:versionwatch@postgres:5432/versionwatch
-      VW_LOG_STATE_FILE: /var/lib/versionwatch/ftp_log.state
-      VW_LOG_LEVEL: INFO
-    volumes:
-      - ftpdata:/srv/ftp
-      - ftplogs:/var/log/vsftpd
-      - vwstate:/var/lib/versionwatch
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
+  # versionwatch:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/versionwatch.Dockerfile
+  #   environment:
+  #     VW_ROOT_DIR: /srv/ftp
+  #     VW_FTP_LOG: /var/log/vsftpd/vsftpd.log
+  #     VW_DATABASE_URL: postgresql://versionwatch:versionwatch@postgres:5432/versionwatch
+  #     VW_LOG_STATE_FILE: /var/lib/versionwatch/ftp_log.state
+  #     VW_LOG_LEVEL: INFO
+  #   volumes:
+  #     - ftpdata:/srv/ftp
+  #     - ftplogs:/var/log/vsftpd
+  #     - vwstate:/var/lib/versionwatch
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   restart: unless-stopped
 
   # 演示用 FTP 服务；生产环境通常由宿主机已有 vsftpd 提供，
   # versionwatch 改为 bind mount 挂载真实存储与日志即可。
@@ -44,8 +44,8 @@ services:
     build:
       context: docker/vsftpd
     environment:
-      FTP_USER: ftpuser
-      FTP_PASS: ftpuser123
+      FTP_USER: oip_admin
+      FTP_PASS: 123456
     ports:
       - "21:21"
       - "30000-30100:30000-30100"

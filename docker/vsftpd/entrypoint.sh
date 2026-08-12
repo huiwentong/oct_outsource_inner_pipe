@@ -13,6 +13,8 @@ fi
 mkdir -p /srv/ftp
 chown -R "$FTP_USER":"$FTP_USER" /srv/ftp
 
+chmod -R u+rwX /srv/ftp
+
 mkdir -p /var/log/vsftpd
 touch /var/log/vsftpd/vsftpd.log
 chmod 666 /var/log/vsftpd/vsftpd.log
