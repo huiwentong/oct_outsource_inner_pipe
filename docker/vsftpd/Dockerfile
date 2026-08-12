@@ -12,10 +12,20 @@ RUN mkdir -p \
     /etc/vsftpd \
     /var/run/vsftpd/empty
 
-COPY vsftpd.conf /etc/vsftpd/vsftpd.conf
-COPY entrypoint.sh /entrypoint.sh
+WORKDIR /app
+COPY docker/vsftpd/vsftpd.conf /etc/vsftpd/vsftpd.conf
+COPY docker/vsftpd/entrypoint.sh /entrypoint.sh
+
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --no-install-project
+
+
+COPY permissionmanager ./permissionmanager
+RUN uv sync --no-dev
+
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 21 30000-30100
+EXPOSE 21 30000-30100 8000 
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -1,22 +1,14 @@
 #!/usr/bin/env bash
 # 创建演示 FTP 用户并启动 vsftpd（生产环境请改用真实账号体系/挂载）
-set -euo pipefail
+set -e
 
-FTP_USER="${FTP_USER:-ftpuser}"
-FTP_PASS="${FTP_PASS:-ftpuser123}"
+# 启动 FTP
+vsftpd /etc/vsftpd/vsftpd.conf &
 
-if ! id -u "$FTP_USER" >/dev/null 2>&1; then
-    useradd -m -d /srv/ftp -s /bin/bash "$FTP_USER"
-    echo "$FTP_USER:$FTP_PASS" | chpasswd
-fi
+# 启动 PermissionManager
+uvicorn permissionmanager.app:app \
+    --host 0.0.0.0 \
+    --port 8000 &
 
-mkdir -p /srv/ftp
-chown -R "$FTP_USER":"$FTP_USER" /srv/ftp
-
-chmod -R u+rwX /srv/ftp
-
-mkdir -p /var/log/vsftpd
-touch /var/log/vsftpd/vsftpd.log
-chmod 666 /var/log/vsftpd/vsftpd.log
-
-exec vsftpd /etc/vsftpd/vsftpd.conf
+# 保持容器运行
+wait -n

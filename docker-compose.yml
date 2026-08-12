@@ -44,13 +44,14 @@ services:
   # versionwatch 改为 bind mount 挂载真实存储与日志即可。
   vsftpd:
     build:
-      context: docker/vsftpd
+      context: .
     environment:
       FTP_USER: oip_admin
       FTP_PASS: 123456
     ports:
       - "21:21"
       - "30000-30100:30000-30100"
+      - "8000:8000"
     volumes:
       - ftpdata:/srv/ftp
       - ftplogs:/var/log/vsftpd
