@@ -1,5 +1,5 @@
 # 演示用 vsftpd 子模块：提供 FTP 服务并输出 xferlog 摘要日志
-FROM debian:bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends vsftpd \

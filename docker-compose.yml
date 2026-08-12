@@ -45,6 +45,7 @@ services:
   vsftpd:
     build:
       context: .
+      dockerfile: docker/vsftpd/Dockerfile
     environment:
       FTP_USER: oip_admin
       FTP_PASS: 123456
