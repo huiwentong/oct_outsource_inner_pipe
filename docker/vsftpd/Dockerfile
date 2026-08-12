@@ -16,13 +16,14 @@ WORKDIR /app
 COPY docker/vsftpd/vsftpd.conf /etc/vsftpd/vsftpd.conf
 COPY docker/vsftpd/entrypoint.sh /entrypoint.sh
 
-
+ENV UV_HTTP_TIMEOUT=300
+ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev --no-install-project
 
 
 COPY permissionmanager ./permissionmanager
-RUN uv sync --no-dev
+RUN uv sync --no-dev --frozen
 
 RUN chmod +x /entrypoint.sh
 
