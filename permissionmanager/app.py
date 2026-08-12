@@ -1,7 +1,7 @@
-from start import start
+from permissionmanager.start import start
 from fastapi import FastAPI
-from core.user_manager import FTPUserManager
-from core import models
+from permissionmanager.core.user_manager import FTPUserManager
+from permissionmanager.core import models
 app = FastAPI()
 start()
 

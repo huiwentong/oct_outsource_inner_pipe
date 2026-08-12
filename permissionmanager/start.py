@@ -3,7 +3,7 @@ import pwd
 import subprocess
 from pathlib import Path
 import psycopg2
-from core.user_manager import Database, FTPUserManager
+from permissionmanager.core.user_manager import Database, FTPUserManager
 
 
 def user_exists(username: str) -> bool:
