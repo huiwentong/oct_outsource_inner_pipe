@@ -4,7 +4,7 @@ FROM debian:bookworm-slim
 RUN apt-get update \
     && apt-get install -y --no-install-recommends vsftpd \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /srv/ftp /var/log/vsftpd /etc/vsftpd
+    && mkdir -p /srv/ftp /var/log/vsftpd /etc/vsftpd /var/run/vsftpd/empty
 
 COPY vsftpd.conf /etc/vsftpd/vsftpd.conf
 COPY entrypoint.sh /entrypoint.sh
