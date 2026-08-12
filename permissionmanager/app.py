@@ -9,7 +9,7 @@ start()
 def get_user(user_name: str):
 
     users = FTPUserManager.get_user(user_name)
-
+    print(users)
     ulist = []
     for u in users:
         if not u: continue
@@ -31,10 +31,10 @@ def get_user(user_name: str):
 @app.get('/get_group', response_model=models.GroupListResponse)
 def get_group(g_name: str):
 
-    users = FTPUserManager.get_group(g_name)
-
+    gs = FTPUserManager.get_group(g_name)
+    print(gs)
     ulist = []
-    for u in users:
+    for u in gs:
         if not u: continue
         ulist.append(
             models.GroupResponse(

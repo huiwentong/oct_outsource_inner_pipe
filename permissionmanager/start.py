@@ -85,6 +85,7 @@ def fill_by_db():
     db = Database()
     users = db.get_users()
     for user in users:
+        print(f'create user {user["name"]}')
         FTPUserManager.create_user(
             username=user['name'],
             password=user['password'],
@@ -96,6 +97,7 @@ def fill_by_db():
         )
     groups = db.get_groups()
     for group in groups:
+        print(f'create group {group["name"]}')
         FTPUserManager.create_group(
             groupname=group['name'],
             description=group['description'],
