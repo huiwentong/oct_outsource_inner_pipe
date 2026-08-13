@@ -395,7 +395,7 @@ class FTPUserManager:
         ]
 
         if home:
-            cmd.extend(["-d", f"/srv/ftp/{home}"])
+            cmd.extend(["-d", home])
 
         cmd.append(username)
 
@@ -409,6 +409,16 @@ class FTPUserManager:
             text=True,
             check=True,
         )
+        if home:
+            subprocess.run(
+                ["chown", f"{username}:oip_admin", home],
+                check=True,
+            )
+
+            subprocess.run(
+                ["chmod", "750", home],
+                check=True,
+            )
         return user
     
 
