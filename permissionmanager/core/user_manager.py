@@ -194,6 +194,7 @@ class Database:
                 dingtalk_id,
                 email,
                 password,
+                home,
                 created_at,
                 updated_at
             FROM ftpuser
