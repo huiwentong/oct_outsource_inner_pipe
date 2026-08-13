@@ -342,6 +342,8 @@ class Database:
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
                 for group_name in group_names:
+                    if group_name == user_name:
+                        continue  
                     group = self.get_group_by_name(group_name)
                     if not group:
                         raise ValueError(f"权限组不存在: {group_name}")
