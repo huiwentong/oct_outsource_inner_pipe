@@ -346,7 +346,7 @@ class Database:
                     if not group:
                         raise ValueError(f"权限组不存在: {group_name}")
                     logger.info(group)
-                    gid = group[0]["id"]
+                    gid = group["id"]
                     cursor.execute(
                         """
                         INSERT INTO user_permission_group (
