@@ -336,7 +336,8 @@ class Database:
         user = self.get_user_by_name(user_name)
         if not user:
             raise ValueError(f"用户不存在: {user_name}")
-        uid = user[0]["id"]
+        logger.info(user)
+        uid = user["id"]
 
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
@@ -344,6 +345,7 @@ class Database:
                     group = self.get_group_by_name(group_name)
                     if not group:
                         raise ValueError(f"权限组不存在: {group_name}")
+                    logger.info(group)
                     gid = group[0]["id"]
                     cursor.execute(
                         """
