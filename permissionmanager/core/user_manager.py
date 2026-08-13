@@ -492,6 +492,8 @@ class FTPUserManager:
         gs = cls.get_group()
         for g in groupnames:
             if g not in gs: raise ValueError(f'group {g} can not found in ftp groups, create it and try again!')
+        if username not in groupnames:
+            groupnames.append(username)
         if db:
             cls.db.add_user2group(username, groupnames)
         subprocess.run(
