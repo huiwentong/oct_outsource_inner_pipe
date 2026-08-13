@@ -124,7 +124,7 @@ class Database:
                 password
             )
             VALUES (%s, %s, %s, %s, %s)
-            RETURNING id;
+            RETURNING *;
         """
 
         with self.get_connection() as conn:
@@ -309,7 +309,7 @@ class Database:
                 description
             )
             VALUES (%s, %s)
-            RETURNING id;
+            RETURNING *;
         """
 
         with self.get_connection() as conn:

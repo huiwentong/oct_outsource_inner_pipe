@@ -7,7 +7,7 @@ def test_requests():
         'description': '测试使用',
         'ding_id': '034822000124675411',
         'email': 'adsdasdasd',
-        'password': '123456'
+        # 'password': '123456'
     }
     res = requests.post(
         url=url,
