@@ -21,8 +21,8 @@ def test_requests():
 def test_requests():
     url = 'http://192.168.30.9:8000/add_u2g'
     data = {
-        'uname': 'mk2',
-        'gnames': '大圣二项目',
+        'uname': 'testa',
+        'gnames': ['mk2', 'tex'],
     }
     res = requests.post(
         url=url,

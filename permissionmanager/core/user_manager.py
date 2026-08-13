@@ -469,9 +469,9 @@ class FTPUserManager:
 
         users = []
         for user in pwd.getpwall():
-            db_user = cls.db.get_user_by_name(user.pw_name)
-            if db_user:
-                users.append(db_user)
+            # db_user = cls.db.get_user_by_name(user.pw_name)
+            # if db_user:
+            users.append(user)
         return users
 
     @classmethod
@@ -482,9 +482,10 @@ class FTPUserManager:
         
         groups = []
         for group in grp.getgrall():
-            db_group = cls.db.get_group_by_name(group.gr_name)
-            if db_group:
-                groups.append(db_group)
+            # db_group = cls.db.get_group_by_name(group.gr_name)
+            # if db_group:
+            groups.append(group)
+
         return groups
 
     @classmethod
