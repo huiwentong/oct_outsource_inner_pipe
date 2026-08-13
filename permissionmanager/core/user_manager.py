@@ -3,6 +3,7 @@ import pwd
 import grp
 from datetime import datetime
 import os
+from pathlib import Path
 from typing import Optional
 from psycopg2.extras import RealDictCursor
 import psycopg2
@@ -535,7 +536,7 @@ class FTPUserManager:
 
         if db:
             cls.db.add_user2group(username, groupnames)
-            
+
         subprocess.run(
             ["usermod", "-G", ','.join(groupnames), username],
             check=True
@@ -552,3 +553,126 @@ class FTPUserManager:
 
         groups = result.stdout.strip().split()
         return groups[1:]
+
+    @staticmethod
+    def _run(*args: str) -> None:
+        subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+
+
+    @classmethod
+    def set_path_group(
+        cls,
+        path: str,
+        group: str,
+        chmod: str = "rx",
+        recursive: bool = True,
+        inherit: bool = False,
+    ):
+        path_obj = Path(path)
+
+        if not path_obj.exists():
+            raise RuntimeError(f"{path} does not exist!")
+
+        if not cls.group_exists(group):
+            raise RuntimeError(f"{group} does not exist!")
+
+        # ACL permissions should only contain r/w/x
+        if not chmod or any(c not in "rwx" for c in chmod):
+            raise ValueError(
+                f"Invalid ACL permission: {chmod!r}. "
+                "Expected a combination of r, w and x."
+            )
+
+        target = str(path_obj)
+
+        if recursive:
+            cmd = ["setfacl", "-R", "-m", f"g:{group}:{chmod}", target]
+        else:
+            cmd = ["setfacl", "-m", f"g:{group}:{chmod}", target]
+
+        subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        # Default ACL controls permissions inherited by newly created
+        # files/directories under this directory.
+        if inherit:
+            if not path_obj.is_dir():
+                raise RuntimeError(
+                    f"inherit=True requires a directory: {path}"
+                )
+
+            default_cmd = [
+                "setfacl",
+                "-d",
+                "-m",
+                f"g:{group}:{chmod}",
+                target,
+            ]
+
+            subprocess.run(
+                default_cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+
+    @classmethod
+    def delete_path_group(
+        cls,
+        path: str,
+        group: str,
+        recursive: bool = True,
+        inherit: bool = True,
+    ) -> None:
+        path_obj = Path(path)
+
+        if not path_obj.exists():
+            raise RuntimeError(f"{path} does not exist!")
+
+        if not cls.group_exists(group):
+            raise RuntimeError(f"{group} does not exist!")
+
+        target = str(path_obj)
+
+        # 删除已有文件/目录上的 ACL
+        if recursive:
+            cls._run(
+                "setfacl",
+                "-R",
+                "-x",
+                f"g:{group}",
+                target,
+            )
+        else:
+            cls._run(
+                "setfacl",
+                "-x",
+                f"g:{group}",
+                target,
+            )
+
+        # 删除目录的 default ACL
+        if inherit:
+            if not path_obj.is_dir():
+                raise RuntimeError(
+                    f"inherit=True requires a directory: {path}"
+                )
+
+            cls._run(
+                "setfacl",
+                "-d",
+                "-x",
+                f"g:{group}",
+                target,
+            )

@@ -10,6 +10,15 @@ class FtpUserBase(BaseModel):
     password: Optional[str] = None
 
 
+class PathGroupBase(BaseModel):
+    path: str
+    group: str
+    chmod: Optional[str] = "rx"
+    rescursive: bool = True
+    inherit: bool = True
+
+
+
 
 class UserResponse(BaseModel):
     name: str

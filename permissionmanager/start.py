@@ -107,11 +107,19 @@ def fill_by_db():
             description=user['description'],
             db=False
         )
+        
         user_groups = db.get_user_groups(user['name'])
         g_names = [g['group_name'] for g in user_groups]
         FTPUserManager.set_user_group(
             username=user['name'],
             groupnames=g_names,
+            db=False
+        )
+
+        all_groups = [g['name'] for g in db.get_groups()]
+        FTPUserManager.set_user_group(
+            username='oip_admin',
+            groupnames=all_groups,
             db=False
         )
     

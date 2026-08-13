@@ -236,3 +236,77 @@ def dele_group(gname: str):
             detail="Internal server error"+traceback.format_exc()
         )
     return Response()
+
+
+@app.post('/set_path_group')
+def set_path_group(pathgroup: models.PathGroupBase):
+    try:
+        chmod = 'rx'
+        if pathgroup.chmod:
+            chmod = pathgroup.chmod
+        
+        FTPUserManager.set_path_group(
+            path=pathgroup.path,
+            group=pathgroup.group,
+            chmod=chmod,
+            recursive=pathgroup.rescursive,
+            inherit=pathgroup.inherit
+        )
+    except ValueError as e:
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=409,
+            detail=str(e)+traceback.format_exc()
+        )
+
+    except Exception:
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"+traceback.format_exc()
+        )
+
+    return {
+        "message": f"Path {pathgroup.path} successfully set to group {pathgroup.group}!"
+    }
+
+
+@app.delete('/delete_path_group')
+def delete_path_group(pathgroup: models.PathGroupBase):
+    try:
+        FTPUserManager.delete_path_group(
+            path=pathgroup.path,
+            group=pathgroup.group,
+            recursive=pathgroup.rescursive,
+            inherit=pathgroup.inherit,
+        )
+
+    except (ValueError, RuntimeError) as e:
+        logger.warning(
+            "Failed to delete path group: path=%s, group=%s, error=%s",
+            pathgroup.path,
+            pathgroup.group,
+            e,
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+        )
+
+    except Exception:
+        logger.exception(
+            "Unexpected error deleting path group: path=%s, group=%s",
+            pathgroup.path,
+            pathgroup.group,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error",
+        )
+
+    return {
+        "message": (
+            f"Path {pathgroup.path} successfully "
+            f"removed from group {pathgroup.group}!"
+        )
+    }
