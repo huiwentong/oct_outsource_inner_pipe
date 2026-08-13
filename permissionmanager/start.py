@@ -108,7 +108,7 @@ def fill_by_db():
             db=False
         )
         user_groups = db.get_user_groups(user['name'])
-        g_names = [g['name'] for g in user_groups]
+        g_names = [g['group_name'] for g in user_groups]
         FTPUserManager.set_user_group(
             username=user['name'],
             groupnames=g_names,
