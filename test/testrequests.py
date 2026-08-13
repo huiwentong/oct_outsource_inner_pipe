@@ -19,17 +19,17 @@ def test_requests():
     print(res.json())
 
 def test_requests():
-    url = 'http://192.168.30.9:8000/add_u2g'
+    url = 'http://192.168.30.9:8000/user_groups'
     data = {
-        'uname': 'testa',
+        'uname': 'test',
         'gnames': ['mk2', 'tex'],
     }
-    res = requests.post(
+    res = requests.get(
         url=url,
-        json=data
-        # params={
-        #     'g_name': 'mod'
-        # }
+        # json=data
+        params={
+            'uname': 'testa'
+        }
     )
     print(res.json())
 

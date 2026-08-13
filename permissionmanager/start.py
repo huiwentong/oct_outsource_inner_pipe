@@ -86,6 +86,16 @@ def prepare_vsftpd_log():
 def fill_by_db():
     db = Database()
     users = db.get_users()
+    groups = db.get_groups()
+    for group in groups:
+        logger.info(f'create group {group["name"]}')
+        FTPUserManager.create_group(
+            groupname=group['name'],
+            description=group['description'],
+            db=False
+        )
+
+
     for user in users:
         logger.info(f'create user {user["name"]}')
         FTPUserManager.create_user(
@@ -97,14 +107,14 @@ def fill_by_db():
             description=user['description'],
             db=False
         )
-    groups = db.get_groups()
-    for group in groups:
-        logger.info(f'create group {group["name"]}')
-        FTPUserManager.create_group(
-            groupname=group['name'],
-            description=group['description'],
+        user_groups = db.get_user_groups(user['name'])
+        g_names = [g['name'] for g in user_groups]
+        FTPUserManager.set_user_group(
+            username=user['name'],
+            groupnames=g_names,
             db=False
         )
+    
 
 
 def start():

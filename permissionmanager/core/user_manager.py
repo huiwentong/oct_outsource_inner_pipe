@@ -364,6 +364,26 @@ class Database:
             conn.commit()
 
 
+    def get_user_groups(self, user_name: str):
+        user = self.get_user_by_name(user_name)
+        if not user:
+            raise ValueError(f"用户不存在: {user_name}")
+        uid = user["id"]
+
+        sql = """
+            SELECT
+                pg.name AS group_name,
+                pg.description AS group_description
+            FROM permission_group pg
+            JOIN user_permission_group upg ON pg.id = upg.permission_group_id
+            WHERE upg.user_id = %s;
+        """
+
+        with self.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(sql, (uid,))
+                return cursor.fetchall()
+
 
 class FTPUserManager:
     db = Database()
@@ -512,8 +532,10 @@ class FTPUserManager:
             if g not in gs: raise ValueError(f'group {g} can not found in ftp groups, create it and try again!')
         if username not in groupnames:
             groupnames.append(username)
+
         if db:
             cls.db.add_user2group(username, groupnames)
+            
         subprocess.run(
             ["usermod", "-G", ','.join(groupnames), username],
             check=True
