@@ -354,7 +354,7 @@ class Database:
                             permission_group_id
                         )
                         VALUES (%s, %s)
-                        ON CONFLICT (uid, gid)
+                        ON CONFLICT (user_id, permission_group_id)
                         DO NOTHING;
                         """,
                         (uid, gid),
