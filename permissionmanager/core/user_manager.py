@@ -350,8 +350,8 @@ class Database:
                     cursor.execute(
                         """
                         INSERT INTO user_permission_group (
-                            uid,
-                            gid
+                            user_id,
+                            permission_group_id
                         )
                         VALUES (%s, %s)
                         ON CONFLICT (uid, gid)
