@@ -76,12 +76,14 @@ def create_group(group:models.GroupBase):
             description=group.description
         )
     except ValueError as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=409,
             detail=str(e)+traceback.format_exc()
         )
 
     except Exception:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail="Internal server error"+traceback.format_exc()
@@ -118,12 +120,14 @@ def create_user(user: models.FtpUserBase):
             description=user.description
         )
     except ValueError as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=409,
             detail=str(e)+traceback.format_exc()
         )
 
     except Exception:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail="Internal server error"+traceback.format_exc()
@@ -152,12 +156,14 @@ def add_u2g(u2g:models.UserGroupBase):
         )
 
     except ValueError as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=409,
             detail=str(e)+traceback.format_exc()
         )
 
     except Exception:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail="Internal server error"+traceback.format_exc()
@@ -175,12 +181,14 @@ def user_groups(uname:str):
     try:
         ugroups = FTPUserManager.get_user_group(username=uname)
     except ValueError as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=409,
             detail=str(e)+traceback.format_exc()
         )
 
     except Exception:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail="Internal server error"+traceback.format_exc()
@@ -196,6 +204,7 @@ def dele_user(uname: str):
     try:
         FTPUserManager.delete_user(username=uname)
     except ValueError as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=409,
             detail=str(e)+traceback.format_exc()
@@ -214,6 +223,7 @@ def dele_group(gname: str):
     try:
         FTPUserManager.delete_group(groupname=gname)
     except ValueError as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=409,
             detail=str(e)+traceback.format_exc()

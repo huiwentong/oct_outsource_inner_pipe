@@ -121,7 +121,7 @@ class Database:
                 description,
                 dingtalk_id,
                 email,
-                password,
+                password
             )
             VALUES (%s, %s, %s, %s, %s)
             RETURNING id;
@@ -306,7 +306,7 @@ class Database:
         sql = """
             INSERT INTO permission_group (
                 name,
-                description,
+                description
             )
             VALUES (%s, %s)
             RETURNING id;
