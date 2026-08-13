@@ -10,6 +10,8 @@ import requests
 import json
 import smtplib
 from email.mime.text import MIMEText
+from logger.core import get_log
+
 
 
 class Notify:
@@ -119,14 +121,14 @@ class Database:
                 description,
                 dingtalk_id,
                 email,
-                password
+                password,
             )
-            VALUES (%s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING id;
         """
 
         with self.get_connection() as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     sql,
                     (
@@ -311,7 +313,7 @@ class Database:
         """
 
         with self.get_connection() as conn:
-            with conn.cursor() as cursor:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(
                     sql,
                     (
@@ -377,10 +379,11 @@ class FTPUserManager:
     @classmethod
     def create_user(cls, username, password, home, ding, email, description, db=True):
         if FTPUserManager.user_exists(username):
-            return
-        
+            return cls.get_user(username)[0]
+
+        user = {}
         if db:
-            cls.db.create_user(username,description=description,dingtalk_id=ding,email=email,password=password)
+            user = cls.db.create_user(username,description=description,dingtalk_id=ding,email=email,password=password)
 
         cmd = [
             "useradd",
@@ -403,6 +406,8 @@ class FTPUserManager:
             text=True,
             check=True,
         )
+        return user
+    
 
     @classmethod
     def delete_user(cls, username, db=True):
@@ -419,14 +424,17 @@ class FTPUserManager:
     @classmethod
     def create_group(cls, groupname, description, db=True):
         if FTPUserManager.group_exists(groupname):
-            return
+            return cls.get_group(groupname=groupname)[0]
+
+        ret_g = {}
         if db:
-            cls.db.create_groups(groupname, description)
+            ret_g = cls.db.create_groups(groupname, description)
         subprocess.run(
             ["groupadd", groupname],
             check=True
         )
-
+        if ret_g:
+            return ret_g
 
     @classmethod
     def delete_group(cls, groupname, db=True):
@@ -467,6 +475,9 @@ class FTPUserManager:
 
     @classmethod
     def set_user_group(cls, username, groupnames,db=True):
+        gs = cls.get_group()
+        for g in groupnames:
+            if g not in gs: raise ValueError(f'group {g} can not found in ftp groups, create it and try again!')
         if db:
             cls.db.add_user2group(username, groupnames)
         subprocess.run(

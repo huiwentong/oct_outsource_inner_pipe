@@ -4,7 +4,9 @@ import subprocess
 from pathlib import Path
 import psycopg2
 from permissionmanager.core.user_manager import Database, FTPUserManager
+from logger.core import get_log
 
+logger = get_log("permissionmanager")
 
 def user_exists(username: str) -> bool:
     try:
@@ -85,7 +87,7 @@ def fill_by_db():
     db = Database()
     users = db.get_users()
     for user in users:
-        print(f'create user {user["name"]}')
+        logger.info(f'create user {user["name"]}')
         FTPUserManager.create_user(
             username=user['name'],
             password=user['password'],
@@ -97,7 +99,7 @@ def fill_by_db():
         )
     groups = db.get_groups()
     for group in groups:
-        print(f'create group {group["name"]}')
+        logger.info(f'create group {group["name"]}')
         FTPUserManager.create_group(
             groupname=group['name'],
             description=group['description'],
@@ -111,4 +113,5 @@ def start():
         password="123456",
     )
     prepare_vsftpd_log()
+    logger.info("Starting sync ftp users and groups...")
     fill_by_db()

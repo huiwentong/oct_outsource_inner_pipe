@@ -35,6 +35,7 @@ services:
   #     - ftpdata:/srv/ftp
   #     - ftplogs:/var/log/vsftpd
   #     - vwstate:/var/lib/versionwatch
+  #     - outsourcelogs:/var/log/outsource
   #   depends_on:
   #     postgres:
   #       condition: service_healthy
@@ -56,6 +57,7 @@ services:
     volumes:
       - ftpdata:/srv/ftp
       - ftplogs:/var/log/vsftpd
+      - outsourcelogs:/var/log/outsource
     restart: unless-stopped
 
 volumes:
@@ -63,3 +65,4 @@ volumes:
   ftpdata:
   ftplogs:
   vwstate:
+  outsourcelogs:

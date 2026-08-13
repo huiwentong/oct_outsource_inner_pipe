@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 class FtpUserBase(BaseModel):
-    user_name: str
+    name: str
     description: str
     ding_id: str
     email: str
-    pass_word: str
+    password: Optional[str] = None
 
 
 
@@ -21,10 +22,21 @@ class UserResponse(BaseModel):
 class UserListResponse(BaseModel):
     users: list[UserResponse] | None
 
+class GroupBase(BaseModel):
+    name: str
+    description: str
+
+class UserGroupBase(BaseModel):
+    uname: str
+    gnames: list[str]
+
+
+
+
 class GroupResponse(BaseModel):
     name: str
     description: str
 
 class GroupListResponse(BaseModel):
-    users: list[GroupResponse] | None
+    groups: list[GroupResponse] | None
 
