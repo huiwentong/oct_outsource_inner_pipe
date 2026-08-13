@@ -114,6 +114,7 @@ class Database:
         dingtalk_id: Optional[str] = None,
         email: Optional[str] = None,
         password: Optional[str] = None,
+        home: Optional[str] = None,
     ):
         sql = """
             INSERT INTO ftpuser (
@@ -121,9 +122,10 @@ class Database:
                 description,
                 dingtalk_id,
                 email,
-                password
+                password,
+                home
             )
-            VALUES (%s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING *;
         """
 
@@ -136,7 +138,8 @@ class Database:
                         description,
                         dingtalk_id,
                         email,
-                        password
+                        password,
+                        home
                     ),
                 )
                 return cursor.fetchone()
@@ -383,7 +386,7 @@ class FTPUserManager:
 
         user = {}
         if db:
-            user = cls.db.create_user(username,description=description,dingtalk_id=ding,email=email,password=password)
+            user = cls.db.create_user(username,description=description,dingtalk_id=ding,email=email,password=password, home=home)
 
         cmd = [
             "useradd",
