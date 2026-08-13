@@ -395,12 +395,12 @@ class FTPUserManager:
 
         cmd = [
             "useradd",
-            "-m",
+            # "-m",
             "-s", "/bin/bash",
         ]
 
         if home:
-            cmd.extend(["-d", home])
+            cmd.extend(["-d", '/srv/ftp'])
 
         cmd.append(username)
 
@@ -416,14 +416,26 @@ class FTPUserManager:
         )
         if home:
             subprocess.run(
+                ["mkdir", "-p", home],
+                check=True,
+            )
+            subprocess.run(
                 ["chown", f"{username}:oip_admin", home],
                 check=True,
             )
-
             subprocess.run(
-                ["chmod", "750", home],
+                ["chmod", "2750", home],
                 check=True,
             )
+            subprocess.run(
+                ["setfacl", "-m", f"g:oip_admin:rx", home],
+                check=True,
+            )
+            subprocess.run(
+                ["setfacl", "-d", "-m", f"g:oip_admin:rx", home],
+                check=True,
+            )
+
         return user
     
 
