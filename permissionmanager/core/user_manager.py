@@ -392,7 +392,7 @@ class FTPUserManager:
         cmd = [
             "useradd",
             "-m",
-            "-s", "/usr/sbin/nologin",
+            "-s", "/bin/bash",
         ]
 
         if home:
