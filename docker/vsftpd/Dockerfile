@@ -2,7 +2,9 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends vsftpd \
+    && apt-get install -y --no-install-recommends \
+        vsftpd \
+        acl \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建固定的运行目录
