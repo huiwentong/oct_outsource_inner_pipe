@@ -19,10 +19,10 @@ def test_requests():
     print(res.json())
 
 def test_requests():
-    url = 'http://192.168.30.9:8000/create_group'
+    url = 'http://192.168.30.9:8000/add_u2g'
     data = {
-        'name': 'mko',
-        'description': 'mko项目',
+        'username': 'testa',
+        'groupnames': 'dasheng',
     }
     res = requests.post(
         url=url,

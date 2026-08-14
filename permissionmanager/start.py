@@ -200,7 +200,7 @@ def refresh_file_acs():
             subprocess.run(
                 [
                     'setfacl',
-                    '-d'
+                    '-d',
                     '-m',
                     f'g:{step}:r-x',
                     str(path)
