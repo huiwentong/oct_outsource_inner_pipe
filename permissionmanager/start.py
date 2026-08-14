@@ -93,7 +93,8 @@ def fill_by_db():
         FTPUserManager.create_group(
             groupname=group['name'],
             description=group['description'],
-            db=False
+            db=False,
+            gid=group['gid']
         )
 
 
@@ -106,7 +107,8 @@ def fill_by_db():
             ding=user['dingtalk_id'],
             email=user['email'],
             description=user['description'],
-            db=False
+            db=False,
+            uid=user['uid']
         )
         
         user_groups = db.get_user_groups(user['name'])
@@ -123,7 +125,21 @@ def fill_by_db():
             groupnames=all_groups,
             db=False
         )
-    
+
+def acl_has_group(path: Path, group: str) -> bool:
+    result = subprocess.run(
+        ["getfacl", "-cp", str(path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    prefix = f"group:{group}:"
+
+    return any(
+        line.startswith(prefix)
+        for line in result.stdout.splitlines()
+    )
 
 def refresh_file_acs():
     if not os.path.exists('/srv/ftp/oct'):
@@ -144,69 +160,65 @@ def refresh_file_acs():
         path = Path(root)
         parts = path.relative_to(base).parts
 
-        if len(parts) == 1:
-            project = parts[0]
-            if not FTPUserManager.group_exists(project):
-                FTPUserManager.create_group(project, 'auto create')
-            subprocess.run(
-                [
-                    'setfacl',
-                    '-m',
-                    f'g:{project}:r-x',
-                    str(path)
-                ],
-                check=True,
-            )
-        elif len(parts) == 2:
-            type_ = parts[1]
-            project = parts[0]
-            if not FTPUserManager.group_exists(project):
-                FTPUserManager.create_group(project, 'auto create')
-            subprocess.run(
-                [
-                    'setfacl',
-                    '-m',
-                    f'g:{project}:r-x',
-                    str(path)
-                ],
-                check=True,
-            )
+
+        
+        if len(parts) in (1, 2):
+            group = parts[0]
+            if not FTPUserManager.group_exists(group):
+                FTPUserManager.create_group(group, 'auto create')
+            
+            if not acl_has_group(path, group):
+                subprocess.run(
+                    [
+                        'setfacl',
+                        '-m',
+                        f'g:{group}:r-x',
+                        str(path)
+                    ],
+                    check=True,
+                )
+
         elif len(parts) == 3:
             entity = parts[2]
             if not FTPUserManager.group_exists(entity):
                 FTPUserManager.create_group(entity, 'auto create')
-            subprocess.run(
-                [
-                    'setfacl',
-                    '-m',
-                    f'g:{entity}:r-x',
-                    str(path)
-                ],
-                check=True,
-            )
+
+            if not acl_has_group(path, entity):
+                subprocess.run(
+                    [
+                        'setfacl',
+                        '-m',
+                        f'g:{entity}:r-x',
+                        str(path)
+                    ],
+                    check=True,
+                )
+            
         elif len(parts) == 4:
             step = parts[3]
             if not FTPUserManager.group_exists(step):
                 FTPUserManager.create_group(step, 'auto create')
-            subprocess.run(
-                [
-                    'setfacl',
-                    '-m',
-                    f'g:{step}:r-x',
-                    str(path)
-                ],
-                check=True,
-            )
-            subprocess.run(
-                [
-                    'setfacl',
-                    '-d',
-                    '-m',
-                    f'g:{step}:r-x',
-                    str(path)
-                ],
-                check=True,
-            )
+            
+            if not acl_has_group(path, step):
+                subprocess.run(
+                    [
+                        'setfacl',
+                        '-m',
+                        f'g:{step}:r-x',
+                        str(path)
+                    ],
+                    check=True,
+                )
+                subprocess.run(
+                    [
+                        'setfacl',
+                        '-d',
+                        '-m',
+                        f'g:{step}:r-x',
+                        str(path)
+                    ],
+                    check=True,
+                )
         else:
             continue
 

@@ -116,6 +116,7 @@ class Database:
         email: Optional[str] = None,
         password: Optional[str] = None,
         home: Optional[str] = None,
+        uid: Optional[str] = None,
     ):
         sql = """
             INSERT INTO ftpuser (
@@ -124,9 +125,10 @@ class Database:
                 dingtalk_id,
                 email,
                 password,
-                home
+                home,
+                uid
             )
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING *;
         """
 
@@ -140,7 +142,8 @@ class Database:
                         dingtalk_id,
                         email,
                         password,
-                        home
+                        home,
+                        uid
                     ),
                 )
                 return cursor.fetchone()
@@ -196,6 +199,7 @@ class Database:
                 email,
                 password,
                 home,
+                uid,
                 created_at,
                 updated_at
             FROM ftpuser
@@ -279,6 +283,7 @@ class Database:
                 id,
                 name,
                 description,
+                gid,
                 created_at,
                 updated_at
             FROM permission_group
@@ -307,13 +312,14 @@ class Database:
                     cursor.execute(sql, (name,))
                     return cursor.fetchone()
 
-    def create_groups(self, name, description):
+    def create_groups(self, name, description, gid):
         sql = """
             INSERT INTO permission_group (
                 name,
-                description
+                description,
+                gid
             )
-            VALUES (%s, %s)
+            VALUES (%s, %s, %s)
             RETURNING *;
         """
 
@@ -324,6 +330,7 @@ class Database:
                     (
                         name,
                         description,
+                        gid,
                     ),
                 )
                 return cursor.fetchone()
@@ -406,27 +413,32 @@ class FTPUserManager:
             return False
 
     @classmethod
-    def create_user(cls, username, password, home, ding, email, description, db=True):
+    def create_user(cls, username, password, home, ding, email, description, db=True,uid:str=''):
         if FTPUserManager.user_exists(username):
             return cls.get_user(username)[0]
 
         user = {}
         if db:
-            user = cls.db.create_user(username,description=description,dingtalk_id=ding,email=email,password=password, home=home)
+            cmd = [
+                "useradd",
+                "-s", "/bin/bash",
+                "-d", '/srv/ftp', username
+            ]
+    
+            subprocess.run(cmd, check=True)
+            uid = str(pwd.getpwnam(username).pw_uid)
+            user = cls.db.create_user(username,description=description,dingtalk_id=ding,email=email,password=password, home=home, uid=uid)
 
-        cmd = [
-            "useradd",
-            # "-m",
-            "-s", "/bin/bash",
-        ]
-
-        if home:
-            cmd.extend(["-d", '/srv/ftp'])
-
-        cmd.append(username)
-
-        # 创建 Linux 用户
-        subprocess.run(cmd, check=True)
+        else:
+            if not uid:
+                raise ValueError("uid is required when db=False")
+            cmd = [
+                "useradd",
+                "-u", str(uid),
+                "-s", "/bin/bash",
+                "-d", '/srv/ftp', username
+            ]
+            subprocess.run(cmd, check=True)
 
         # 设置 FTP 登录密码
         subprocess.run(
@@ -435,6 +447,8 @@ class FTPUserManager:
             text=True,
             check=True,
         )
+
+
         if home:
             subprocess.run(
                 ["mkdir", "-p", home],
@@ -473,19 +487,36 @@ class FTPUserManager:
 
 
     @classmethod
-    def create_group(cls, groupname, description, db=True):
+    def create_group(cls, groupname, description, db=True, gid:str=''):
         if FTPUserManager.group_exists(groupname):
             return cls.get_group(groupname=groupname)[0]
 
         ret_g = {}
+
+
         if db:
-            ret_g = cls.db.create_groups(groupname, description)
-        subprocess.run(
-            ["groupadd", groupname],
-            check=True
-        )
-        if ret_g:
+            subprocess.run(
+                ["groupadd", groupname],
+                check=True
+            )
+            result = subprocess.run(
+                ["getent", "group", groupname],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            gid = str(result.stdout.split(":")[2])
+            ret_g = cls.db.create_groups(groupname, description, gid)
             return ret_g
+
+        else:
+            if not gid:
+                raise ValueError("gid is required when db=False")
+            subprocess.run(
+                ["groupadd","-g", gid, groupname],
+                check=True
+            )
+
 
     @classmethod
     def delete_group(cls, groupname, db=True):
