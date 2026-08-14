@@ -5,6 +5,7 @@ from pathlib import Path
 import psycopg2
 from permissionmanager.core.user_manager import Database, FTPUserManager
 from logger.core import get_log
+import traceback
 
 logger = get_log("permissionmanager")
 
@@ -124,6 +125,92 @@ def fill_by_db():
         )
     
 
+def refresh_file_acs():
+    if not os.path.exists('/srv/ftp/oct'):
+        return
+    
+    subprocess.run(
+        [
+            'setfacl',
+            '-m',
+            'd:u::rwx,d:g::rwx,d:o::--x',
+            '/srv/ftp/oct'
+        ],
+        check=True,
+    )
+    base = Path("/srv/ftp/oct")
+
+    for root, dirs, files in os.walk(base):
+        path = Path(root)
+        parts = path.relative_to(base).parts
+
+        if len(parts) == 1:
+            project = parts[0]
+            if not FTPUserManager.group_exists(project):
+                FTPUserManager.create_group(project, 'auto create')
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{project}:r-x',
+                    str(path)
+                ],
+                check=True,
+            )
+        elif len(parts) == 2:
+            type_ = parts[1]
+            project = parts[0]
+            if not FTPUserManager.group_exists(project):
+                FTPUserManager.create_group(project, 'auto create')
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{project}:r-x',
+                    str(path)
+                ],
+                check=True,
+            )
+        elif len(parts) == 3:
+            entity = parts[2]
+            if not FTPUserManager.group_exists(entity):
+                FTPUserManager.create_group(entity, 'auto create')
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{entity}:r-x',
+                    str(path)
+                ],
+                check=True,
+            )
+        elif len(parts) == 4:
+            step = parts[3]
+            if not FTPUserManager.group_exists(step):
+                FTPUserManager.create_group(step, 'auto create')
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{step}:r-x',
+                    str(path)
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-d'
+                    '-m',
+                    f'g:{step}:r-x',
+                    str(path)
+                ],
+                check=True,
+            )
+        else:
+            continue
+
+
 
 def start():
     create_ftp_user(
@@ -132,4 +219,9 @@ def start():
     )
     prepare_vsftpd_log()
     logger.info("Starting sync ftp users and groups...")
-    fill_by_db()
+    try:
+        fill_by_db()
+        refresh_file_acs()
+    except Exception as e:
+        logger.error(traceback)
+        raise RuntimeError(e)

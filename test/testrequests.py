@@ -19,17 +19,17 @@ def test_requests():
     print(res.json())
 
 def test_requests():
-    url = 'http://192.168.30.9:8000/user_groups'
+    url = 'http://192.168.30.9:8000/create_group'
     data = {
-        'uname': 'test',
-        'gnames': ['mk2', 'tex'],
+        'name': 'mko',
+        'description': 'mko项目',
     }
-    res = requests.get(
+    res = requests.post(
         url=url,
-        # json=data
-        params={
-            'uname': 'testa'
-        }
+        json=data
+        # params={
+        #     'uname': 'testa'
+        # }
     )
     print(res.json())
 

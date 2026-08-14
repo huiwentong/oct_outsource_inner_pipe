@@ -1,6 +1,8 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
+
+
 def get_log(logger_name: str = "permissionmanager") -> logging.Logger:
     logger = logging.getLogger(logger_name)
     if logger.handlers:
@@ -35,3 +37,6 @@ def get_log(logger_name: str = "permissionmanager") -> logging.Logger:
 
     logger.info(f"{logger_name} started")
     return logger
+
+
+watch_logger = get_log("versionwatch")
