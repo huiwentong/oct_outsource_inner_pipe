@@ -450,10 +450,14 @@ class FTPUserManager:
 
 
         if home:
-            subprocess.run(
-                ["mkdir", "-p", home],
-                check=True,
-            )
+
+            logger.info(f'{username}创建用户目录{home}且赋予权限！')
+            if not os.path.exists(home):
+                subprocess.run(
+                    ["mkdir", "-p", home],
+                    check=True,
+                )
+            
             subprocess.run(
                 ["chown", f"{username}:oip_admin", home],
                 check=True,
