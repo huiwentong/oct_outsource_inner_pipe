@@ -344,7 +344,6 @@ class Database:
         user = self.get_user_by_name(user_name)
         if not user:
             raise ValueError(f"用户不存在: {user_name}")
-        logger.info(user)
         uid = user["id"]
 
         with self.get_connection() as conn:
@@ -355,7 +354,6 @@ class Database:
                     group = self.get_group_by_name(group_name)
                     if not group:
                         raise ValueError(f"权限组不存在: {group_name}")
-                    logger.info(group)
                     gid = group["id"]
                     cursor.execute(
                         """
@@ -563,7 +561,6 @@ class FTPUserManager:
     @classmethod
     def set_user_group(cls, username, groupnames,db=True):
         gs = cls.get_group()
-        logger.info(gs)
         for g in groupnames:
             if g not in gs: raise ValueError(f'group {g} can not found in ftp groups, create it and try again!')
         if username not in groupnames:

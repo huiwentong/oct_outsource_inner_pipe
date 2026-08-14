@@ -2,10 +2,13 @@ import requests
 
 
 def test_requests():
-    url = 'http://192.168.30.9:8000/add_u2g'
+    url = 'http://192.168.30.9:8000/create_user'
     data = {
-        'uname': 'yuanli',
-        'gnames': ['mko','mk2', 'dasheng', 'mod', 'tex', 's010010'],
+        'name': 'heguang',
+        'description': '外包商: 和光同尘',
+        'ding_id': 'asdasdw213sdd12',
+        'email': 'heguang@qq.com',
+        'password': '123456'
     }
     res = requests.post(
         url=url,
