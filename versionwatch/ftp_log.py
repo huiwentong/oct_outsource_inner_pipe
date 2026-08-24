@@ -169,6 +169,7 @@ class FtpLogTailer:
     async def run(self, emit) -> None:
         while True:
             try:
+                logger.info("FTP 日志 tail tick")
                 await self._tick(emit)
             except FileNotFoundError:
                 # 日志文件被轮转删除/尚未创建：复位，等待下个 tick
