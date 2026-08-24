@@ -169,7 +169,6 @@ class FtpLogTailer:
     async def run(self, emit) -> None:
         while True:
             try:
-                logger.info("FTP 日志 tail tick")
                 await self._tick(emit)
             except FileNotFoundError:
                 # 日志文件被轮转删除/尚未创建：复位，等待下个 tick
@@ -194,9 +193,9 @@ class FtpLogTailer:
         self._inode = st.st_ino
         if prev_inode is not None and prev_inode != st.st_ino:
             self._offset = 0  # 轮转：新文件从头读
-        elif self._offset == 0:
-            # 全新启动：跳过历史日志
-            self._fh.seek(0, os.SEEK_END)
+        # elif self._offset == 0:
+        #     # 全新启动：跳过历史日志
+        #     self._fh.seek(0, os.SEEK_END)
         else:
             self._fh.seek(self._offset)
         self._offset = self._fh.tell()
@@ -205,8 +204,10 @@ class FtpLogTailer:
     async def _tick(self, emit) -> None:
         st = self._open_if_needed()
         if not self._fh:
+            logger.error("FTP 日志文件句柄不存在，无法读取")
             raise RuntimeError('can not find self._fh!!')
         size = st.st_size
+        logger.info("FTP 日志文件大小: %d, 当前偏移: %d", size, self._offset)
         if self._offset > size:
             # 文件被截断（copytruncate）或轮转后变小：从头读
             self._fh.seek(0)
