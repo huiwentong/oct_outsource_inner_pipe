@@ -12,11 +12,13 @@ def get_log(logger_name: str = "permissionmanager", test=False) -> logging.Logge
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
 
-    filename = f"/var/log/outsource/{logger_name}.log"
-    if test:
+
+    if os.path.exists("/var/log/outsource"):
+        filename = f"/var/log/outsource/{logger_name}.log"
+    else:
         filename = Path(__file__).parent.parent / f'{logger_name}.log'
 
-        
+
     file_handler = TimedRotatingFileHandler(
         filename=filename,
         when="midnight",      # 每天凌晨切换
