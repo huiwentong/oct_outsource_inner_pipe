@@ -14,26 +14,19 @@ from versionwatch.fs_watch import FsWatcher
 from versionwatch.hash_scan import HashScanner
 from versionwatch.pipeline import Pipeline
 from versionwatch.recorder import Recorder
-
-logger = logging.getLogger("versionwatch")
-
-
-def _setup_logging(level: str) -> None:
-    logging.basicConfig(
-        level=getattr(logging, level.upper(), logging.INFO),
-        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-        stream=sys.stdout,
-    )
+from logger.core import watch_logger
 
 
 async def _run(settings: Settings) -> None:
-    _setup_logging(settings.log_level)
+    logger = watch_logger
     logger.info(
         "versionwatch 启动 root_dir=%s ftp_log=%s", settings.root_dir, settings.ftp_log
     )
 
     if not settings.root_dir.is_dir():
         raise SystemExit(f"监控根目录不存在: {settings.root_dir}")
+
+
 
     # 数据库初始化（建表）
     bootstrap = await connect_with_retry(settings)
@@ -42,11 +35,14 @@ async def _run(settings: Settings) -> None:
     finally:
         await bootstrap.close()
 
+
+
+
     queue: asyncio.Queue = asyncio.Queue(maxsize=10000)
     recorder = Recorder(settings, open_connection)
     pipeline = Pipeline(settings, queue, recorder)
-    tailer = FtpLogTailer(settings)
-    scanner = HashScanner(settings, open_connection, queue.put_nowait)
+    tailer = FtpLogTailer(settings, queue)
+    # scanner = HashScanner(settings, open_connection, queue.put_nowait)
     watcher = FsWatcher(settings, queue)
 
     loop = asyncio.get_running_loop()
@@ -65,7 +61,6 @@ async def _run(settings: Settings) -> None:
     tasks = [
         asyncio.create_task(pipeline.run(), name="pipeline"),
         asyncio.create_task(tailer.run(queue.put_nowait), name="ftp-log-tailer"),
-        asyncio.create_task(scanner.run(), name="hash-scanner"),
     ]
 
     watcher.start(loop)

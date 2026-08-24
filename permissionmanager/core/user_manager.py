@@ -98,6 +98,7 @@ class Database:
         self.database = database
         self.user = user
         self.password = password
+        self.init_schema()
 
     def get_connection(self):
         return psycopg2.connect(
@@ -210,6 +211,66 @@ class Database:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(sql)
                 return cursor.fetchall()
+
+
+    def init_schema(self):
+        SQL = """
+CREATE TABLE IF NOT EXISTS ftpuser (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    dingtalk_id TEXT,
+    email TEXT,
+    password TEXT NOT NULL,
+    uid TEXT NOT NULL UNIQUE,
+    home TEXT,
+    
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS permission_group (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    gid TEXT NOT NULL UNIQUE,
+    
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS user_permission_group (
+    user_id BIGINT NOT NULL REFERENCES ftpuser(id) ON DELETE CASCADE,
+    permission_group_id BIGINT NOT NULL REFERENCES permission_group(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, permission_group_id)
+);
+
+-- updated_at 自动更新时间函数
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ftpuser trigger
+DROP TRIGGER IF EXISTS ftpuser_updated_at ON ftpuser;
+
+CREATE TRIGGER ftpuser_updated_at
+BEFORE UPDATE ON ftpuser
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- permission_group trigger
+DROP TRIGGER IF EXISTS permission_group_updated_at ON permission_group;
+
+CREATE TRIGGER permission_group_updated_at
+BEFORE UPDATE ON permission_group
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+        """
+        with self.get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(SQL)
 
 
     def update_user(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any, Callable
+from typing import Any, Callable, Awaitable
 
 import psycopg
 
@@ -36,14 +36,14 @@ def resolve_version(prev: dict[str, Any] | None) -> tuple[str, int, int | None, 
 class Recorder:
     """单连接写入器：失败自动重连。"""
 
-    def __init__(self, settings: Settings, conn_factory: Callable[[], Any]) -> None:
+    def __init__(self, settings: Settings, conn_factory: Callable[[Settings], Awaitable[Any]]) -> None:
         self.settings = settings
         self.conn_factory = conn_factory
         self._conn: Any = None
 
     async def _ensure_conn(self) -> Any:
         if self._conn is None or self._conn.closed:
-            self._conn = await self.conn_factory()
+            self._conn = await self.conn_factory(self.settings)
         return self._conn
 
     async def _reset_conn(self) -> None:

@@ -14,16 +14,18 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from typing import Optional
 import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
-
+from io import TextIOWrapper, BufferedReader
+from logger.core import watch_logger
 from versionwatch.config import Settings
 from versionwatch.events import EventSource, EventType, FileEvent, normalize_rel_path
 
-logger = logging.getLogger(__name__)
+logger = watch_logger
 
 # 可选星期前缀 + 完整时间戳 + pid + 可选用户名 + 状态 + 动词 + Client
 SUMMARY_RE = re.compile(
@@ -49,7 +51,7 @@ _CHANGE_VERBS = {"UPLOAD", "DELETE", "RENAME"}
 _MAX_READ_PER_TICK = 4 * 1024 * 1024
 
 
-def _get_tz(name: str) -> ZoneInfo | timezone:
+def _get_tz(name: str="Asia/Shanghai") -> ZoneInfo | timezone:
     try:
         return ZoneInfo(name)
     except Exception:
@@ -130,15 +132,14 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
 
 
 class FtpLogTailer:
-    """持续 tail vsftpd 日志，支持轮转（inode 变化）与截断（copytruncate）。"""
-
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-        self._fh: object | None = None  # typing: BinaryIO
+    def __init__(self, queue: Optional[asyncio.Queue]=None) -> None:
+        # self.settings = settings
+        self._fh: BufferedReader | None = None  # typing: BinaryIO
         self._inode: int | None = None
         self._offset = 0
-        self._state_path = settings.log_state_file
-        self._tz = _get_tz(settings.log_timezone)
+        self._queue = queue
+        self._state_path = Path(__file__).parent.parent / "ftp_log.state"
+        self._tz = _get_tz()
         self._load_state()
 
     def _load_state(self) -> None:
@@ -166,7 +167,6 @@ class FtpLogTailer:
             self._fh = None
 
     async def run(self, emit) -> None:
-        logger.info("FTP 日志 tail 启动: %s", self.settings.ftp_log)
         while True:
             try:
                 await self._tick(emit)
@@ -179,20 +179,20 @@ class FtpLogTailer:
                 self._offset = 0
             except Exception:
                 logger.exception("FTP 日志 tail 出错")
-            await asyncio.sleep(self.settings.log_poll_interval)
+            await asyncio.sleep(1.0)
 
     def _open_if_needed(self) -> os.stat_result:
-        st = os.stat(self.settings.ftp_log)
+        st = os.stat('/var/lib/docker/volumes/outsource-pip_ftplogs/_data/vsftpd.log')
         if self._fh is not None and st.st_ino == self._inode:
             return st
         if self._fh is not None:
             self._fh.close()
         prev_inode = self._inode
-        self._fh = open(self.settings.ftp_log, "rb")
+        self._fh = open('/var/lib/docker/volumes/outsource-pip_ftplogs/_data/vsftpd.log', "rb")
         self._inode = st.st_ino
         if prev_inode is not None and prev_inode != st.st_ino:
             self._offset = 0  # 轮转：新文件从头读
-        elif self._offset == 0 and self.settings.log_start_mode == "end":
+        elif self._offset == 0:
             # 全新启动：跳过历史日志
             self._fh.seek(0, os.SEEK_END)
         else:
@@ -202,6 +202,8 @@ class FtpLogTailer:
 
     async def _tick(self, emit) -> None:
         st = self._open_if_needed()
+        if not self._fh:
+            raise RuntimeError('can not find self._fh!!')
         size = st.st_size
         if self._offset > size:
             # 文件被截断（copytruncate）或轮转后变小：从头读
@@ -215,8 +217,18 @@ class FtpLogTailer:
         self._offset = self._fh.tell()
         text = data.decode("utf-8", errors="replace")
         for raw_line in text.splitlines():
-            ev = parse_ftp_line(raw_line, self.settings.root_dir, self._tz)
+            logger.info("FTP 日志行: %s", raw_line)
+            ev = parse_ftp_line(raw_line, Path('/var/lib/docker/volumes/outsource-pip_ftpdata/_data'), self._tz)
             if ev is not None:
                 emit(ev)
                 logger.debug("FTP 日志事件: %s", ev.summary())
         self._save_state()
+
+
+def test_emit(fe: FileEvent):
+    logger.info(f'emit {fe.summary()}')
+
+
+if __name__ == '__main__':
+    flt = FtpLogTailer()
+    asyncio.run(flt.run(test_emit))

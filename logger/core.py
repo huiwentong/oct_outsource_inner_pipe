@@ -1,9 +1,9 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import os
+from pathlib import Path
 
-
-
-def get_log(logger_name: str = "permissionmanager") -> logging.Logger:
+def get_log(logger_name: str = "permissionmanager", test=False) -> logging.Logger:
     logger = logging.getLogger(logger_name)
     if logger.handlers:
         return logger
@@ -12,9 +12,13 @@ def get_log(logger_name: str = "permissionmanager") -> logging.Logger:
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
 
+    filename = f"/var/log/outsource/{logger_name}.log"
+    if test:
+        filename = Path(__file__).parent.parent / f'{logger_name}.log'
 
+        
     file_handler = TimedRotatingFileHandler(
-        filename=f"/var/log/outsource/{logger_name}.log",
+        filename=filename,
         when="midnight",      # 每天凌晨切换
         interval=1,           # 间隔1天
         backupCount=30,       # 保留30天
