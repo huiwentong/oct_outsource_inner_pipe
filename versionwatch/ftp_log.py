@@ -38,7 +38,7 @@ SUMMARY_RE = re.compile(
 
 UPLOAD_RE = re.compile(r',\s+"(?P<path>[^"]+)",\s+(?P<size>\d+)\s+bytes')
 SIMPLE_PATH_RE = re.compile(r',\s+"(?P<path>[^"]+)"')
-RENAME_RE = re.compile(r',\s+from\s+"(?P<src>[^"]+)"\s+to\s+"(?P<dst>[^"]+)"')
+RENAME_RE = re.compile(r',\s+"(?P<src>[^"]+)\s+(?P<dst>[^"]+)"')
 
 _MONTHS = {
     "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
@@ -46,7 +46,7 @@ _MONTHS = {
 }
 
 # 摘要行中可能出现的动词；只关心会改变文件的
-_CHANGE_VERBS = {"UPLOAD", "DELETE", "RENAME"}
+_CHANGE_VERBS = {"UPLOAD", "DELETE", "RENAME", "MKDIR", "RMDIR"}
 
 _MAX_READ_PER_TICK = 4 * 1024 * 1024
 
@@ -97,12 +97,25 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
         rel_path = normalize_rel_path(rm.group("dst"))
         move_src = normalize_rel_path(rm.group("src"))
         event_type = EventType.MOVED
+    elif verb == "MKDIR":
+            mm = SIMPLE_PATH_RE.search(rest)
+            if not mm:
+                return None
+            rel_path = normalize_rel_path(mm.group("dst"))
+            event_type = EventType.CREATED
+    elif verb == "RMDIR":
+            rm = SIMPLE_PATH_RE.search(rest)
+            if not rm:
+                return None
+            rel_path = normalize_rel_path(rm.group("path"))
+            event_type = EventType.DELETED
 
     assert rel_path is not None and event_type is not None
 
     mon = _MONTHS.get(m.group("mon"))
     if mon is None:
         return None
+
     day = int(m.group("day"))
     hh, mm, ss = (int(x) for x in m.group("time").split(":"))
     year = int(m.group("year"))
@@ -132,19 +145,19 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
 
 
 class FtpLogTailer:
-    def __init__(self, queue: Optional[asyncio.Queue]=None) -> None:
-        # self.settings = settings
+    def __init__(self, settings: Settings, queue: Optional[asyncio.Queue]=None) -> None:
+        self.settings = settings
         self._fh: BufferedReader | None = None  # typing: BinaryIO
         self._inode: int | None = None
         self._offset = 0
         self._queue = queue
-        self._state_path = Path(__file__).parent.parent / "ftp_log.state"
+        self._state_path = settings.log_state_file
         self._tz = _get_tz()
         self._load_state()
 
     def _load_state(self) -> None:
         try:
-            data = json.loads(self._state_path.read_text(encoding="utf-8"))
+            data = json.loads(self.settings.log_state_file.read_text(encoding="utf-8"))
             self._inode = int(data.get("inode") or 0)
             self._offset = int(data.get("offset") or 0)
         except Exception:
@@ -180,16 +193,16 @@ class FtpLogTailer:
                 self._offset = 0
             except Exception:
                 logger.exception("FTP 日志 tail 出错")
-            await asyncio.sleep(1.0)
+            await asyncio.sleep(self.settings.log_poll_interval)
 
     def _open_if_needed(self) -> os.stat_result:
-        st = os.stat('/var/lib/docker/volumes/outsource-pip_ftplogs/_data/vsftpd.log')
+        st = os.stat(self.settings.ftp_log)
         if self._fh is not None and st.st_ino == self._inode:
             return st
         if self._fh is not None:
             self._fh.close()
         prev_inode = self._inode
-        self._fh = open('/var/lib/docker/volumes/outsource-pip_ftplogs/_data/vsftpd.log', "rb")
+        self._fh = open(self.settings.ftp_log, "rb")
         self._inode = st.st_ino
         if prev_inode is not None and prev_inode != st.st_ino:
             self._offset = 0  # 轮转：新文件从头读
@@ -221,7 +234,7 @@ class FtpLogTailer:
         text = data.decode("utf-8", errors="replace")
         for raw_line in text.splitlines():
             logger.info("FTP 日志行: %s", raw_line)
-            ev = parse_ftp_line(raw_line, Path('/var/lib/docker/volumes/outsource-pip_ftpdata/_data'), self._tz)
+            ev = parse_ftp_line(raw_line, self.settings.root_dir, self._tz)
             if ev is not None:
                 emit(ev)
                 logger.debug("FTP 日志事件: %s", ev.summary())
@@ -233,5 +246,14 @@ def test_emit(fe: FileEvent):
 
 
 if __name__ == '__main__':
-    flt = FtpLogTailer()
+    settings = Settings(
+        root_dir=Path('/var/lib/docker/volumes/outsource-pip_ftpdata/_data'),
+        ftp_log=Path('/var/lib/docker/volumes/outsource-pip_ftplogs/_data/vsftpd.log'),
+        database_url='postgres',
+        log_state_file=Path(__file__).parent.parent / "ftp_log.state",
+    )
+    flt = FtpLogTailer(settings=settings)
     asyncio.run(flt.run(test_emit))
+    # fe = parse_ftp_line('Mon Aug 24 10:37:03 2026 [pid 239] [hongli] OK UPLOAD: Client "192.168.16.156", "/hongli/public (1).key", 1711 bytes, 1680.98Kbyte/sec',Path('/var/lib/docker/volumes/outsource-pip_ftpdata/_data'),_get_tz())
+    # if fe:
+    #     logger.info(fe.summary())
