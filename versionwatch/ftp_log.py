@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import signal
 import logging
 from typing import Optional
 import os
@@ -153,6 +154,7 @@ class FtpLogTailer:
         self._queue = queue
         self._state_path = settings.log_state_file
         self._tz = _get_tz()
+        self.stop_event = asyncio.Event()
         self._load_state()
 
     def _load_state(self) -> None:
@@ -173,14 +175,29 @@ class FtpLogTailer:
         except OSError as exc:
             logger.warning("保存日志 tail 状态失败: %s", exc)
 
+
+    def delete_state(self) -> None:
+        try:
+            self._state_path.unlink()
+            logger.info("删除日志 tail 状态成功")
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            logger.warning("删除日志 tail 状态失败: %s", exc)
+
+
     def close(self) -> None:
         self._save_state()
         if self._fh is not None:
             self._fh.close()
             self._fh = None
 
+    def stop(self) -> None:
+        self.stop_event.set()
+        self.close()
+
     async def run(self, emit) -> None:
-        while True:
+        while self.stop_event.is_set() is False:
             try:
                 await self._tick(emit)
             except FileNotFoundError:
@@ -233,11 +250,9 @@ class FtpLogTailer:
         self._offset = self._fh.tell()
         text = data.decode("utf-8", errors="replace")
         for raw_line in text.splitlines():
-            logger.info("FTP 日志行: %s", raw_line)
             ev = parse_ftp_line(raw_line, self.settings.root_dir, self._tz)
             if ev is not None:
                 emit(ev)
-                logger.debug("FTP 日志事件: %s", ev.summary())
         self._save_state()
 
 
@@ -245,7 +260,7 @@ def test_emit(fe: FileEvent):
     logger.info(f'emit {fe.summary()}')
 
 
-if __name__ == '__main__':
+async def test_run():
     settings = Settings(
         root_dir=Path('/var/lib/docker/volumes/outsource-pip_ftpdata/_data'),
         ftp_log=Path('/var/lib/docker/volumes/outsource-pip_ftplogs/_data/vsftpd.log'),
@@ -253,7 +268,32 @@ if __name__ == '__main__':
         log_state_file=Path(__file__).parent.parent / "ftp_log.state",
     )
     flt = FtpLogTailer(settings=settings)
-    asyncio.run(flt.run(test_emit))
+
+    loop = asyncio.get_running_loop()
+    stop = asyncio.Event()
+
+    def _request_stop(signame: str) -> None:
+        logger.info("收到 %s，正在优雅退出...", signame)
+        stop.set()
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, _request_stop, sig.name)
+        except (NotImplementedError, RuntimeError):
+            pass
+    
+    asyncio.create_task(flt.run(test_emit), name="ftp-log-tailer")
+
+    try:
+        await stop.wait()
+    finally:
+        flt.stop()
+
+
+
+
+if __name__ == '__main__':
+    asyncio.run(test_run())
     # fe = parse_ftp_line('Mon Aug 24 10:37:03 2026 [pid 239] [hongli] OK UPLOAD: Client "192.168.16.156", "/hongli/public (1).key", 1711 bytes, 1680.98Kbyte/sec',Path('/var/lib/docker/volumes/outsource-pip_ftpdata/_data'),_get_tz())
     # if fe:
     #     logger.info(fe.summary())
