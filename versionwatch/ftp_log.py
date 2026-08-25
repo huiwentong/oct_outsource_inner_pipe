@@ -101,7 +101,7 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
             mm = SIMPLE_PATH_RE.search(rest)
             if not mm:
                 return None
-            rel_path = normalize_rel_path(mm.group("dst"))
+            rel_path = normalize_rel_path(mm.group("path"))
             event_type = EventType.CREATED
     elif verb == "RMDIR":
             rm = SIMPLE_PATH_RE.search(rest)
