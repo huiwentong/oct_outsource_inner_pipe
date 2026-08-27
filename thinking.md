@@ -89,6 +89,7 @@
                     /s03
                     /s04
                         /s040040
+                            /default_path.json
                             /asb
                             /lay
                                 /..
@@ -98,17 +99,21 @@
                 /asset
                     /chr
                         /dagui_c
+                            /default_path.json
                             /asb
                                 /dagui_c.usda
                             /art
                                 /..
                             /mod
-                                /dagui_c.mod.model
+                                /dagui_c.mod.usda
+                                /dagui_c.mod.model.v003
                                     /dagui_c.ma
                                     /mesh.xml
                                     /usd
                                         /comp.usda
                                         /high.usd
+                                /dagui_c.mod.model.v005
+                                    /..
                             /rig
                             /tex
                             /fur
@@ -118,11 +123,11 @@
         /vender01
             /dagui_g
                 /mod
+                    /model_manifest.json
                     /preview
                         /xxxx.png
                         /xxx.mov
                     /project
-                        /manifest.json
                         /images
                         /dagui_g.ma
                 /tex
@@ -131,10 +136,10 @@
             
             /s060050
                 /lay
+                    /rough_layout_manifest.json
                     /preview
                         /xxxx.mov
                     /project
-                        /manifest.json
                         /s050060.lay.rough_layout.v018.ma
                 /ani
                 /efx
@@ -144,3 +149,68 @@
         
         /vernder02
         /..
+
+
+
+```python
+# manifest.json结构
+# manifest.json命名规则：任务名_manifest.json
+{
+    'upload_files': [
+        'test.ma',
+        'topology.xml',
+        'image/tex01.jpg',
+        'image/tex02.jpg',
+        'image/tex03.jpg',
+        'image/tex04.jpg',
+    ],
+    'publish_options': {
+        'ma_file': 'test.ma',
+        'zb_file': 'test.zb'
+    },
+    'previews': [
+        'testp/test01.png',
+        'testp/test02.png',
+    ]
+    'asset_name': 'dagui',
+    'task_step': 'mod',
+    'task_name': 'model',
+    'comment': '这次是一次测试提交，用于测试外包回传文件的完整性'
+}
+
+# default_path.json结构
+{   
+    'entity_name': 'dagui_c',
+    'default_path': 'I:/projects/mk2/asset/chr/dagui_c'
+}
+
+```
+
+### 所有人都不能手动直接操作ftp根路径，只能通过ftp对根路径的文件进行操作
+
+### 所有外包回传的文件如果检查没有问题后会先收录在W盘相关的项目文件夹下的outsourcing文件夹中去，并携带版本信息
+
+
+### 发包流程
+- 选择发包的资产（可多选），选择发包的环节（可多选）
+- 为每一个资产的每一个环节指定额外参考物料（如没有,可跳过）(各个环节不同)
+- 制片点击确认打包
+- 找到当前资产的环节所依赖所有的上游资产/环节(各个环节不同)
+- 给外包商增加所有需要使用到资产/环节的权限(如果已有权限则跳过)
+- 比对所有需要抓取的版本文件夹和ftp中所记录的版本，如果不一致或者ftp没有，则添加到待上传列表中(各个环节不同)
+- 开始向ftp进行上传
+- 上传过后需要对不同类型的文件添加权限（资产权限/环节权限）
+- 如果是新生成资产的话会生成一个default_path.json的文件来给外包商提供扫入参照
+- 钉钉通知外包商此次发包的具体信息
+
+
+### 收包流程
+- 外包商在相应的资产文件夹的环节文件夹里，上传物料
+- 外包商回传预览图： 只需要新建preview文件夹并将预览图/视频放进文件夹即可
+- 外包商回传待发布的工程文件： 除了preview文件夹之外还需要新建project文件夹
+- 所有需要上传物料完毕后,外包商再在环节文件夹里最后上传manifest.json文件，系统识别到此文件后立刻开始进入自动流程
+- 系统根据manifest文件的信息，与十月内部shotgun和外包存放的路径信息进行逐一比对，校验名称/路径规则合法性
+- 系统会将manifest中提供的preview和upload_files,将他们都拷贝到w盘的外包回收路径中,并自动生成一个版本号，在w盘中长期留存
+- 针对预览回传: 系统会直接根据manifest中提供的preview信息,将这些预览,在农场中使用oct_publish工具命令行模式发布Daily到shogun中等待审核
+- 针对工程文件回传: 会根据manifest中提供的publish_options，使用oct_publish工具的命令行模式放到农场机器中进行Publish发布
+- 整合农场机器的反馈信息，钉钉提醒外包商

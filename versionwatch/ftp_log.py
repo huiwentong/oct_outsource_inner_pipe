@@ -273,7 +273,7 @@ async def test_run():
     stop = asyncio.Event()
 
     def _request_stop(signame: str) -> None:
-        logger.info("收到 %s，正在优雅退出...", signame)
+        logger.info("收到 %s, 正在优雅退出...", signame)
         stop.set()
 
     for sig in (signal.SIGINT, signal.SIGTERM):

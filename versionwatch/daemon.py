@@ -39,11 +39,12 @@ async def _run(settings: Settings) -> None:
 
 
     queue: asyncio.Queue = asyncio.Queue(maxsize=10000)
+
     recorder = Recorder(settings, open_connection)
     pipeline = Pipeline(settings, queue, recorder)
     tailer = FtpLogTailer(settings, queue)
     # scanner = HashScanner(settings, open_connection, queue.put_nowait)
-    watcher = FsWatcher(settings, queue)
+    # watcher = FsWatcher(settings, queue)
 
     loop = asyncio.get_running_loop()
     stop = asyncio.Event()
@@ -63,12 +64,12 @@ async def _run(settings: Settings) -> None:
         asyncio.create_task(tailer.run(queue.put_nowait), name="ftp-log-tailer"),
     ]
 
-    watcher.start(loop)
+    # watcher.start(loop)
     try:
         await stop.wait()
     finally:
         logger.info("开始优雅退出...")
-        watcher.stop()
+        # watcher.stop()
         pipeline.stop()
         tailer.close()
         try:

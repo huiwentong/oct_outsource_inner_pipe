@@ -13,8 +13,11 @@ from typing import Any
 from versionwatch.config import Settings
 from versionwatch.events import EventSource, EventType, FileEvent
 from versionwatch.hashing import hash_file
+from logger.core import watch_logger
+import requests
 
-logger = logging.getLogger(__name__)
+
+logger = watch_logger
 
 
 @dataclass
