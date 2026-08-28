@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>十月文化 · 外包收发包流程</title>
+<style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+        --bg:#f5f5f0;--card:#fafaf7;--text:#2c2c2a;--sub:#5c5c58;--muted:#8a8a84;
+        --recv:#1a8a7a;--recv-light:#e0f2ef;--recv-mid:#b8dfd8;--recv-dark:#0d6b5e;
+        --send:#2f6fb0;--send-light:#e3edf9;--send-mid:#b9d1ee;--send-dark:#1d4f85;
+        --warn:#b8860b;--warn-light:#fef3e2;
+        --border:#d8d8d2;--radius:16px;--radius-sm:10px;
+        --shadow:0 8px 32px rgba(0,0,0,.06);--shadow-sm:0 2px 8px rgba(0,0,0,.04);
+        --t:.35s cubic-bezier(.22,1,.36,1);
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+    ::selection{background:var(--recv);color:#fff}
+    .wrapper{max-width:1080px;margin:0 auto;padding:0 24px 80px}
+
+    /* Hero */
+    .hero{padding:64px 0 48px;text-align:center}
+    .hero .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 18px;background:var(--recv-light);color:var(--recv-dark);font-size:13px;font-weight:500;border-radius:20px;margin-bottom:20px}
+    .hero .tag .dot{width:6px;height:6px;background:var(--recv);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    .hero h1{font-size:clamp(1.8rem,4.5vw,2.8rem);font-weight:900;letter-spacing:1px;line-height:1.35;margin-bottom:12px}
+    .hero h1 .hl{background:linear-gradient(135deg,var(--send),var(--recv));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{font-size:1rem;color:var(--sub);max-width:680px;margin:0 auto 28px}
+    .hero nav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+    .hero nav a{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:var(--card);border:1px solid var(--border);border-radius:24px;color:var(--sub);text-decoration:none;font-size:13px;font-weight:500;transition:var(--t)}
+    .hero nav a:hover{background:var(--recv);border-color:var(--recv);color:#fff;transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,138,122,.25)}
+
+    /* Section */
+    .section{margin-top:56px}
+    .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+    .sec-head .num{flex-shrink:0;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(26,138,122,.25)}
+    .sec-head.send .num{background:linear-gradient(135deg,#3d83c7,var(--send-dark));box-shadow:0 4px 14px rgba(47,111,176,.25)}
+    .sec-head.recv .num{background:linear-gradient(135deg,var(--recv),var(--recv-dark))}
+    .sec-head h2{font-size:1.35rem;font-weight:800}
+    .sec-head .en{font-size:.72rem;font-weight:500;color:var(--muted);margin-left:8px;letter-spacing:1px}
+    .sec-head .line{flex:1;height:1px;background:var(--border)}
+    .one-liner{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--recv);border-radius:var(--radius-sm);padding:12px 18px;margin-bottom:24px;font-size:.93rem;color:var(--sub)}
+    .one-liner strong{color:var(--recv-dark)}
+
+    /* Overview pipeline */
+    .pipe{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;justify-content:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 20px}
+    .pipe-node{flex:1 1 150px;max-width:190px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 12px;text-align:center;transition:var(--t)}
+    .pipe-node:hover{transform:translateY(-3px);box-shadow:var(--shadow-sm);border-color:var(--recv-mid)}
+    .pipe-node .ic{font-size:1.5rem;display:block;margin-bottom:6px}
+    .pipe-node b{display:block;font-size:.92rem;margin-bottom:2px}
+    .pipe-node small{color:var(--muted);font-size:.78rem}
+    .pipe-arrow{display:flex;align-items:center;color:var(--muted);font-size:1.2rem;padding-top:6px}
+    .pipe-arrow small{font-size:.68rem;color:var(--muted);writing-mode:vertical-lr;letter-spacing:1px}
+    .loop{display:flex;justify-content:center;margin-top:16px}
+    .loop span{padding:8px 18px;background:var(--warn-light);border:1px dashed #e0c07a;border-radius:20px;font-size:.85rem;color:var(--warn)}
+    .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:24px}
+    .rule{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;font-size:.88rem;color:var(--sub)}
+    .rule b{display:block;color:var(--text);margin-bottom:2px}
+
+    /* Flow stepper */
+    .flow{position:relative;padding-left:34px}
+    .flow::before{content:'';position:absolute;left:12px;top:12px;bottom:12px;width:2px;background:var(--border)}
+    .phase{margin-bottom:26px;position:relative}
+    .phase-title{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:8px 16px;font-size:.88rem;font-weight:700;margin-bottom:14px;position:relative}
+    .send .phase-title{color:var(--send-dark);background:var(--send-light);border-color:var(--send-mid)}
+    .recv .phase-title{color:var(--recv-dark);background:var(--recv-light);border-color:var(--recv-mid)}
+    .phase .num{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+    .send .phase .num{background:linear-gradient(135deg,#3d83c7,var(--send-dark))}
+    .recv .phase .num{background:linear-gradient(135deg,var(--recv),var(--recv-dark))}
+    .steps{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .step{display:flex;gap:14px;align-items:flex-start;padding:14px 18px;transition:var(--t)}
+    .step+.step{border-top:1px dashed var(--border)}
+    .step:hover{background:var(--bg)}
+    .step .idx{flex-shrink:0;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:2px}
+    .send .step .idx{background:var(--send-light);color:var(--send-dark);border:1px solid var(--send-mid)}
+    .recv .step .idx{background:var(--recv-light);color:var(--recv-dark);border:1px solid var(--recv-mid)}
+    .step p{font-size:.93rem;color:var(--sub);padding-top:3px}
+    .step p b{color:var(--text)}
+    .step .flag{margin-left:auto;flex-shrink:0;font-size:.72rem;padding:2px 10px;border-radius:10px;font-weight:500}
+    .step-body{flex:1;min-width:0}
+    .step-note{margin-top:10px;padding:10px 14px;background:var(--bg);border:1px dashed var(--send-mid);border-left:3px solid var(--send);border-radius:10px;font-size:.85rem;color:var(--sub);display:flex;flex-direction:column;gap:4px}
+    .step-note .note-label{font-weight:700;color:var(--send-dark)}
+    .step-note span b{color:var(--text)}
+    .flag.system{background:var(--send-light);color:var(--send-dark)}
+    .flag.vendor{background:var(--recv-light);color:var(--recv-dark)}
+    .flag.warn{background:var(--warn-light);color:var(--warn)}
+
+    /* preview vs project */
+    .compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:26px}
+    .cmp{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+    .cmp h4{font-size:.95rem;margin-bottom:6px}
+    .cmp p{font-size:.85rem;color:var(--sub)}
+    .cmp code{background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:6px;font-size:.78rem;font-family:Consolas,monospace;color:var(--send-dark)}
+    .cmp.v{background:var(--recv-light);border-color:var(--recv-mid)}
+    .cmp.v code{color:var(--recv-dark)}
+
+    /* Mechanism cards */
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;transition:var(--t)}
+    .card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+    .card .ic{font-size:1.4rem}
+    .card h4{font-size:.98rem;margin:8px 0 6px}
+    .card .badge{font-size:.7rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);padding:2px 10px;border-radius:10px;margin-left:8px;font-weight:500}
+    .card p{font-size:.87rem;color:var(--sub)}
+
+    /* Code */
+    .codes{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+    .code-block{background:#1f2a2a;border-radius:var(--radius);padding:20px;overflow-x:auto}
+    .code-block .file{display:block;font-family:Consolas,monospace;font-size:.78rem;color:#7fd4c4;margin-bottom:10px}
+    .code-block pre{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:.8rem;line-height:1.75;color:#d8e8e4}
+
+    /* FTP path tree */
+    .path-hint{margin-bottom:18px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--recv);border-radius:var(--radius-sm);padding:12px 18px;font-size:.88rem;color:var(--sub);line-height:1.8}
+    .path-hint b{color:var(--recv-dark)}
+    .path-hint code{background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:6px;font-size:.78rem;font-family:Consolas,monospace;color:var(--recv-dark)}
+    .trees{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;align-items:start}
+    .tree-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:var(--t)}
+    .tree-card:hover{box-shadow:var(--shadow-sm);border-color:var(--recv-mid)}
+    .tree-title{font-size:.88rem;font-weight:700;margin-bottom:12px}
+    .tree-title .tag{font-size:.7rem;font-weight:500;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:2px 10px;border-radius:10px;margin-left:8px;vertical-align:1px}
+    .tree{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:.76rem;line-height:1.72;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 12px;overflow-x:auto}
+    .tree .tf{color:var(--recv-dark);font-weight:600}
+    .tree .cm{color:var(--muted);font-style:italic}
+    .footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.82rem}
+    @media(max-width:768px){.hero{padding:44px 0 32px}.pipe-arrow{display:none}.step .flag{display:none}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<header class="hero">
+    <div class="tag"><span class="dot"></span> 十月文化 · 内部自动化流程</div>
+    <h1>外包<span class="hl">收发包流程</span>速览</h1>
+    <p>一页看懂「发包 → 回收 → 自动检查 → 发布 → 反馈」全链路：制片怎么发、外包怎么传、系统如何全自动接住。</p>
+    <nav>
+        <a href="#overview">🔄 全链路总览</a>
+        <a href="#send">📤 发包流程</a>
+        <a href="#recv">📥 收包流程</a>
+        <a href="#mech">🧩 关键机制</a>
+        <a href="#manifest">📄 manifest.json</a>
+        <a href="#path">📁 FTP 路径</a>
+    </nav>
+</header>
+
+<!-- 01 全链路总览 -->
+<section class="section" id="overview">
+    <div class="sec-head recv">
+        <div class="num">01</div>
+        <h2>全链路总览<span class="en">OVERVIEW</span></h2>
+        <div class="line"></div>
+    </div>
+    <div class="pipe">
+        <div class="pipe-node"><span class="ic">📤</span><b>制片发包</b><small>选资产×环节<br>收集数据传 FTP</small></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node"><span class="ic">🎬</span><b>外包制作回传</b><small>按规范传 FTP<br>最后传 manifest</small></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node"><span class="ic">👁️</span><b>版本监控</b><small>盯 FTP 日志<br>变更全量入库</small></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node"><span class="ic">🔀</span><b>行为分配</b><small>归并一次改动<br>按环节路由</small></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node"><span class="ic">🤖</span><b>自动行为</b><small>合规检查<br>农场发布</small></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node"><span class="ic">🔔</span><b>钉钉反馈</b><small>外包 / 制片 / TD<br>结果闭环</small></div>
+    </div>
+    <div class="loop"><span>↺ 审核不通过 → 外包商按反馈再次回传，重入自动流程</span></div>
+    <div class="rules">
+        <div class="rule"><b>🔒 铁律一</b>FTP 根路径禁止手动直接操作，一切只能通过 FTP 对根路径内文件操作。</div>
+        <div class="rule"><b>📦 铁律二</b>检查通过的回传文件统一收录到 W 盘 outsourcing 文件夹，并携带版本信息长期留存。</div>
+        <div class="rule"><b>🔑 铁律三</b>manifest.json 是进入自动流程的“开关”，外包必须最后上传它。</div>
+    </div>
+</section>
+
+<!-- 02 发包流程 -->
+<section class="section send" id="send">
+    <div class="sec-head send">
+        <div class="num">02</div>
+        <h2>发包流程<span class="en">SEND FLOW</span></h2>
+        <div class="line"></div>
+    </div>
+    <div class="one-liner">一句话：制片选好「资产 × 环节」与<strong>外包商</strong> → 系统自动备依赖、配权限、传文件 → 钉钉告知外包商。</div>
+    <div class="flow">
+        <div class="phase">
+            <div class="phase-title"><span class="num">A</span>选择与配置</div>
+            <div class="steps">
+                <div class="step"><span class="idx">1</span><p>制片选择要发包的<strong>资产</strong>与<strong>环节</strong>（均可多选）</p><span class="flag vendor">制片操作</span></div>
+                <div class="step"><span class="idx">2</span><p>为每个「资产 × 环节」指定<strong>额外参考物料</strong>（可跳过，按环节而定）</p><span class="flag vendor">制片操作</span></div>
+                <div class="step"><span class="idx">3</span><p>为此次的发包指定要发给哪一个 <strong>外包商</strong></p><span class="flag vendor">制片操作</span></div>
+                <div class="step"><span class="idx">4</span><p>制片点击<strong>「确认打包」</strong>，流程启动</p><span class="flag vendor">制片操作</span></div>
+            </div>
+        </div>
+        <div class="phase">
+            <div class="phase-title"><span class="num">B</span>依赖与权限</div>
+            <div class="steps">
+                <div class="step"><span class="idx">5</span><div class="step-body"><p>自动定位该环节依赖的<strong>所有上游资产 / 环节</strong></p><div class="step-note"><span class="note-label">例如</span><span>Layout 环节 → 会依赖 <b>char1、char2、prop1、prop2</b> 四个资产</span><span>Rig 环节发包 → 同时给到该资产的 <b>mod 环节权限</b></span></div></div><span class="flag system">系统自动</span></div>
+                <div class="step"><span class="idx">6</span><p>自动为外包商<strong>补齐所需权限</strong>（已有权限则跳过）</p><span class="flag system">系统自动</span></div>
+            </div>
+        </div>
+        <div class="phase">
+            <div class="phase-title"><span class="num">C</span>版本比对与上传</div>
+            <div class="steps">
+                <div class="step"><span class="idx">7</span><p>比对需抓取的版本文件夹与 FTP 记录版本，<strong>缺失或不一致</strong>则加入待上传列表</p><span class="flag system">系统自动</span></div>
+                <div class="step"><span class="idx">8</span><p>开始<strong>向 FTP 上传</strong>整理好的数据</p><span class="flag system">系统自动</span></div>
+            </div>
+        </div>
+        <div class="phase">
+            <div class="phase-title"><span class="num">D</span>收尾与通知</div>
+            <div class="steps">
+                <div class="step"><span class="idx">9</span><div class="step-body"><p>上传后按文件类型<strong>追加权限</strong>（资产权限 / 环节权限）</p><div class="step-note"><span class="note-label">解释</span><span>文件上传到 <b>oct/mk2/</b> 路径下后默认是管理员权限，外包商无法查看；需按类型追加权限（如 <b>dagui → 资产权限</b>、<b>tex → 环节权限</b>），有对应权限的外包商才能查看与下载。</span></div></div><span class="flag system">系统自动</span></div>
+                <div class="step"><span class="idx">10</span><div class="step-body"><p>新生成资产自动产出 <strong>default_path.json</strong>，供外包商扫入参照</p><div class="step-note"><span class="note-label">解释</span><span>方便外包商使用 <b>USD</b> 文件特性：USD 会自动嵌套组装成最终文件，前提是路径必须放对，否则解析不到。外包商没有 TD 重扫路径时，下载数据路径需与内部路径完全一致；此 JSON 提供推荐扫入路径，保证 USD 正确组装。</span></div></div><span class="flag system">系统自动</span></div>
+                <div class="step"><span class="idx">11</span><p><strong>钉钉通知</strong>外包商本次发包的具体信息</p><span class="flag warn">通知</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 03 收包流程 -->
+<section class="section recv" id="recv">
+    <div class="sec-head recv">
+        <div class="num">03</div>
+        <h2>收包流程<span class="en">RECEIVE FLOW</span></h2>
+        <div class="line"></div>
+    </div>
+    <div class="one-liner">一句话：外包按规范回传并以 manifest.json 触发 → 系统校验 → 收录 W 盘 → 农场发布 → 钉钉反馈。</div>
+    <div class="flow">
+        <div class="phase">
+            <div class="phase-title"><span class="num">A</span>外包回传</div>
+            <div class="steps">
+                <div class="step"><span class="idx">1</span><p>外包商在对应的「资产 → 环节」文件夹内<strong>上传物料</strong></p><span class="flag vendor">外包商</span></div>
+                <div class="step"><span class="idx">2</span><p>📷 预览回传：只需新建 <strong>preview/</strong> 文件夹，放入预览图 / 视频</p><span class="flag vendor">外包商</span></div>
+                <div class="step"><span class="idx">3</span><p>📦 工程回传：除 preview/ 外，还需新建 <strong>project/</strong> 文件夹</p><span class="flag vendor">外包商</span></div>
+                <div class="step"><span class="idx">4</span><p>物料全部传完后<strong>最后上传 manifest.json</strong>，系统识别到即进入自动流程</p><span class="flag warn">触发点</span></div>
+            </div>
+        </div>
+        <div class="phase">
+            <div class="phase-title"><span class="num">B</span>系统校验与收录</div>
+            <div class="steps">
+                <div class="step"><span class="idx">5</span><p>将 manifest 信息与<strong> Shotgun、存放路径逐一比对</strong>，校验名称 / 路径规则合法性</p><span class="flag system">系统自动</span></div>
+                <div class="step"><span class="idx">6</span><p>把 preview 与 upload_files <strong>拷贝到 W 盘外包回收路径</strong>，自动生成版本号长期留存</p><span class="flag system">系统自动</span></div>
+            </div>
+        </div>
+        <div class="phase">
+            <div class="phase-title"><span class="num">C</span>发布与反馈</div>
+            <div class="steps">
+                <div class="step"><span class="idx">7</span><p>📷 预览回传 → 农场中以 <strong>oct_publish CLI 发布 Daily</strong> 到 Shotgun 等待审核</p><span class="flag system">农场执行</span></div>
+                <div class="step"><span class="idx">8</span><p>📦 工程回传 → 依据 <strong>publish_options</strong>，以 oct_publish CLI 在农场执行 <strong>Publish 发布</strong></p><span class="flag system">农场执行</span></div>
+                <div class="step"><span class="idx">9</span><p>整合农场反馈结果，<strong>钉钉提醒外包商</strong></p><span class="flag warn">通知</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="compare">
+        <div class="cmp">
+            <h4>📷 预览回传</h4>
+            <p>路径：<code>preview/</code>（图 + 视频）<br>处理：发布 <code>Daily</code> 至 Shotgun 等待审核</p>
+        </div>
+        <div class="cmp v">
+            <h4>📦 工程回传</h4>
+            <p>路径：<code>preview/</code> + <code>project/</code>（内含 <code>manifest.json</code>）<br>处理：依据 <code>publish_options</code> 执行 <code>Publish</code> 发布</p>
+        </div>
+    </div>
+</section>
+
+<!-- 04 关键机制 -->
+<section class="section" id="mech">
+    <div class="sec-head recv">
+        <div class="num">04</div>
+        <h2>支撑这套流程的关键机制<span class="en">KEY MECHANISMS</span></h2>
+        <div class="line"></div>
+    </div>
+    <div class="cards">
+        <div class="card"><span class="ic">📄</span><h4>manifest.json<span class="badge">自动流程开关</span></h4><p>命名规则 <code>任务名_manifest.json</code>；记录 upload_files / publish_options / previews / 资产与环节信息。系统识别到它，自动流程才开工。</p></div>
+        <div class="card"><span class="ic">👁️</span><h4>版本监控模块<span class="badge">Linux 服务</span></h4><p>ftptailer 实时盯 FTP 日志 → recorder 全量入库（谁上传、多大、覆盖、删除）；覆盖时自动标记 v002；同时向队列推送文件事件。</p></div>
+        <div class="card"><span class="ic">🔀</span><h4>行为分配模块<span class="badge">Linux 服务</span></h4><p>常驻 pipeline 抓取队列事件 → FastAPI 按事件类型路由行为；耗时任务通过 <strong>Deadline API</strong> 调度农场；可读写 W 盘 / I 盘。</p></div>
+        <div class="card"><span class="ic">🤖</span><h4>自动行为模块<span class="badge">Linux 服务</span></h4><p>按环节执行 TD 编写的检查代码（路径规范、帧率帧数等）；<strong>队列 + 农场节点</strong>消化并发耗时任务，等待结果后反馈。</p></div>
+        <div class="card"><span class="ic">🔐</span><h4>权限分配模块<span class="badge">Windows 控制端</span></h4><p>实时管理用户与权限；新增外包商自动建 Shotgun 用户 + Linux / FTP 账户，自动生成密码，连接信息通过钉钉发送。</p></div>
+        <div class="card"><span class="ic">🔔</span><h4>钉钉反馈闭环<span class="badge">全流程</span></h4><p>文件检查不通过 → 通知外包商 + 制片；程序报错 → 通知 TD；通过 / 发布结果 → 通知制片与外包商。所有环节结果即时触达。</p></div>
+    </div>
+</section>
+
+<!-- 05 manifest.json 速览 -->
+<section class="section" id="manifest">
+    <div class="sec-head recv">
+        <div class="num">05</div>
+        <h2>关键文件速览<span class="en">FILE FORMAT</span></h2>
+        <div class="line"></div>
+    </div>
+    <div class="codes">
+        <div class="code-block">
+            <span class="file">// 任务名_manifest.json — 外包回传时的"清单 + 开关"</span>
+            <pre>{
+  "upload_files": ["test.ma", "topology.xml",
+                   "image/tex01.jpg", "image/tex02.jpg"],
+  "publish_options": { "ma_file": "test.ma",
+                       "zb_file": "test.zb" },
+  "previews": ["testp/test01.png", "testp/test02.png"],
+  "asset_name": "dagui",
+  "task_step": "mod",
+  "task_name": "model",
+  "comment": "测试提交，校验回传完整性"
+}</pre>
+        </div>
+        <div class="code-block">
+            <span class="file">// default_path.json — 新资产发包时自动生成，供外包扫入参照</span>
+            <pre>{
+  "entity_name": "dagui_c",
+  "default_path": "I:/projects/mk2/asset/chr/dagui_c"
+}</pre>
+        </div>
+    </div>
+</section>
+
+
+<!-- 06 FTP 路径层级设计 -->
+<section class="section" id="path">
+    <div class="sec-head recv">
+        <div class="num">06</div>
+        <h2>FTP 路径层级设计<span class="en">DIRECTORY STRUCTURE</span></h2>
+        <div class="line"></div>
+    </div>
+    <div class="path-hint">📌 <b>结构</b>：根目录 <code>oct/mk2/</code> 存放发包数据（外包下载），<code>venderXX/</code> 为外包商回传回收区。<br>📌 <b>要求</b>：所有外包回传文件（审核用预览图 / 视频除外）必须在 <b>project</b> 文件夹内包含 <b>manifest.json</b>，用于记录必要信息。</div>
+    <div class="trees">
+        <div class="tree-card">
+            <div class="tree-title">📦 <code>oct/mk2/</code> · 内部数据区<span class="tag">发包侧 · 外包下载</span></div>
+            <pre class="tree"><span class="tf">oct/</span>
+└─ <span class="tf">mk2/</span>
+   ├─ <span class="tf">shot/</span>
+   │  ├─ <span class="tf">s03/</span>
+   │  ├─ <span class="tf">s04/</span>
+   │  │  └─ <span class="tf">s040040/</span>
+   │  │     ├─ <span class="fl">default_path.json</span>
+   │  │     ├─ <span class="tf">asb/</span>
+   │  │     ├─ <span class="tf">lay/</span> <span class="cm">⋯</span>
+   │  │     └─ <span class="tf">ani/</span>
+   │  └─ <span class="cm">⋯</span>
+   └─ <span class="tf">asset/</span>
+      ├─ <span class="tf">chr/</span>
+      │  └─ <span class="tf">dagui_c/</span>
+      │     ├─ <span class="fl">default_path.json</span>
+      │     ├─ <span class="tf">asb/</span>
+      │     │  └─ <span class="fl">dagui_c.usda</span>
+      │     ├─ <span class="tf">art/</span> <span class="cm">⋯</span>
+      │     ├─ <span class="tf">mod/</span>
+      │     │  ├─ <span class="fl">dagui_c.mod.usda</span>
+      │     │  ├─ <span class="tf">dagui_c.mod.model.v003/</span>
+      │     │  │  ├─ <span class="fl">dagui_c.ma</span>
+      │     │  │  ├─ <span class="fl">mesh.xml</span>
+      │     │  │  └─ <span class="tf">usd/</span>
+      │     │  │     ├─ <span class="fl">comp.usda</span>
+      │     │  │     └─ <span class="fl">high.usd</span>
+      │     │  └─ <span class="tf">dagui_c.mod.model.v005/</span> <span class="cm">⋯</span>
+      │     ├─ <span class="tf">rig/</span>
+      │     ├─ <span class="tf">tex/</span>
+      │     └─ <span class="tf">fur/</span>
+      ├─ <span class="tf">asb/</span>
+      └─ <span class="tf">prp/</span></pre>
+        </div>
+        <div class="tree-card">
+            <div class="tree-title">🤝 <code>vender01/</code> · 外包商回收区<span class="tag">收包侧 · 外包回传</span></div>
+            <pre class="tree"><span class="tf">vender01/</span>
+├─ <span class="tf">dagui_g/</span> <span class="cm">← 资产</span>
+│  ├─ <span class="tf">mod/</span>
+│  │  ├─ <span class="fl">model_manifest.json</span>
+│  │  ├─ <span class="tf">preview/</span>
+│  │  │  ├─ <span class="fl">xxxx.png</span>
+│  │  │  └─ <span class="fl">xxx.mov</span>
+│  │  └─ <span class="tf">project/</span>
+│  │     ├─ <span class="tf">images/</span>
+│  │     └─ <span class="fl">dagui_g.ma</span>
+│  ├─ <span class="tf">tex/</span>
+│  ├─ <span class="tf">fur/</span>
+│  └─ <span class="tf">rig/</span>
+└─ <span class="tf">s060050/</span> <span class="cm">← 镜头</span>
+   ├─ <span class="tf">lay/</span>
+   │  ├─ <span class="fl">rough_layout_manifest.json</span>
+   │  ├─ <span class="tf">preview/</span>
+   │  │  └─ <span class="fl">xxxx.mov</span>
+   │  └─ <span class="tf">project/</span>
+   │     └─ <span class="fl">s050060.lay.rough_layout.v018.ma</span>
+   ├─ <span class="tf">ani/</span>
+   ├─ <span class="tf">efx/</span>
+   ├─ <span class="tf">cfx/</span>
+   ├─ <span class="tf">lgt/</span>
+   └─ <span class="tf">cmp/</span>
+
+<span class="cm">vender02/ ⋯</span></pre>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>十月文化 · 外包收发包流程速览 &nbsp;|&nbsp; 本文档基于 thinking.md 整理</p>
+</footer>
+</div>
+</body>
+</html>
