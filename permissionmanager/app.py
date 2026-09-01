@@ -310,3 +310,37 @@ def delete_path_group(pathgroup: models.PathGroupBase):
             f"removed from group {pathgroup.group}!"
         )
     }
+
+
+@app.get('/get_path_group')
+def get_path_group(_path:str):
+    try:
+        ret = FTPUserManager.get_path_group(_path)
+
+    except (ValueError, RuntimeError) as e:
+        logger.warning(
+            "Failed to get path group: path=%s, error=%s",
+            _path,
+            e,
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+        )
+
+    except Exception:
+        logger.exception(
+            "Unexpected error get path group: path=%s",
+            _path
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error",
+        )
+
+    return {
+        "message": (
+            f"get Path group {_path} successfully "
+            f"deatail {ret}!"
+        )
+    }
