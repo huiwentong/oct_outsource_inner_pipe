@@ -338,9 +338,23 @@ def get_path_group(_path:str):
             detail="Internal server error",
         )
 
+    all_ret = {
+        'base':[],
+        'acl':[],
+        'inherit':[],
+    }
+    for _sub_strip in ret.split('\n'):
+        if _sub_strip.startswith('#'):
+            all_ret['base'].append(_sub_strip)
+        elif _sub_strip.startswith('default'):
+            all_ret['inherit'].append(_sub_strip)
+        else:
+            all_ret['acl'].append(_sub_strip)            
+
+
     return {
         "message": (
             f"get Path group {_path} successfully "
-            f"deatail {ret}!"
-        )
+        ),
+        "detail": all_ret
     }
