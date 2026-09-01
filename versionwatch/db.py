@@ -17,49 +17,44 @@ from versionwatch.events import FileEvent
 logger = logging.getLogger(__name__)
 
 SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS file_history (
+CREATE TABLE IF NOT EXISTS file_events (
     id               BIGSERIAL PRIMARY KEY,
-    event_id         UUID NOT NULL UNIQUE,
-    source           TEXT NOT NULL,
+
     event_type       TEXT NOT NULL,
     rel_path         TEXT NOT NULL,
-    abs_path         TEXT,
+
     file_size        BIGINT,
-    mtime            TIMESTAMPTZ,
     checksum         TEXT,
     actor            TEXT,
+    
     client_ip        TEXT,
-    session_pid      INTEGER,
+    session_id INTEGER,
+    client_name        TEXT,
+    
     version          INTEGER NOT NULL,
     previous_version INTEGER,
     overwritten      BOOLEAN NOT NULL DEFAULT FALSE,
+    
     details          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    mtime            TIMESTAMPTZ,
     observed_at      TIMESTAMPTZ NOT NULL,
     recorded_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_file_history_rel_path    ON file_history (rel_path);
-CREATE INDEX IF NOT EXISTS idx_file_history_observed_at ON file_history (observed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_file_history_rel_version ON file_history (rel_path, version);
+CREATE INDEX IF NOT EXISTS idx_file_events_rel_path    ON file_events (rel_path);
+CREATE INDEX IF NOT EXISTS idx_file_events_observed_at ON file_events (observed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_file_events_rel_version ON file_events (rel_path, version);
 
 CREATE TABLE IF NOT EXISTS file_state (
     rel_path   TEXT PRIMARY KEY,
     file_size  BIGINT,
-    mtime      DOUBLE PRECISION,
+    mtime      TIMESTAMPTZ,
     checksum   TEXT,
     version    INTEGER NOT NULL DEFAULT 0,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS scan_state (
-    scan_type     TEXT PRIMARY KEY,
-    last_start    TIMESTAMPTZ,
-    last_finish   TIMESTAMPTZ,
-    files_seen    BIGINT DEFAULT 0,
-    files_changed BIGINT DEFAULT 0,
-    details       JSONB NOT NULL DEFAULT '{}'::jsonb
-);
 """
 
 
@@ -111,7 +106,8 @@ async def upsert_state(
     version: int,
     is_deleted: bool = False,
 ) -> None:
-    await conn.execute(
+        m_time = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime else None
+        await conn.execute(
         """
         INSERT INTO file_state (rel_path, file_size, mtime, checksum, version, is_deleted, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s, now())
@@ -123,7 +119,7 @@ async def upsert_state(
             is_deleted = EXCLUDED.is_deleted,
             updated_at = now()
         """,
-        (rel_path, file_size, mtime, checksum, version, is_deleted),
+        (rel_path, file_size, m_time, checksum, version, is_deleted),
     )
 
 
@@ -151,23 +147,20 @@ async def insert_history(
     mtime = datetime.fromtimestamp(event.mtime, tz=timezone.utc) if event.mtime else None
     cur = await conn.execute(
         """
-        INSERT INTO file_history (
-            event_id, source, event_type, rel_path, abs_path, file_size, mtime, checksum,
-            actor, client_ip, session_pid, version, previous_version, overwritten, details, observed_at
-        ) VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
-        ON CONFLICT (event_id) DO NOTHING
+        INSERT INTO file_events (
+            event_type, rel_path, file_size, mtime, checksum,
+            actor, client_ip, client_name, session_pid, version, previous_version, overwritten, details, observed_at
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
         """,
         (
-            event_id,
-            event.source.value,
             event_type,
             event.rel_path,
-            event.host_path,
             event.size,
             mtime,
             event.checksum,
             event.actor,
             event.client_ip,
+            event.client_name,
             event.session_pid,
             version,
             previous_version,

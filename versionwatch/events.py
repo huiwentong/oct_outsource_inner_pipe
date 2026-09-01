@@ -29,23 +29,26 @@ class FileEvent:
     ``host_path`` 是监控进程视角下的绝对路径。
     """
 
-    source: EventSource
-    event_type: EventType
+    event_type: EventType\
+    
     rel_path: str
-    host_path: str
+    move_src: str | None = None  # MOVED 事件的源相对路径
+
     size: int | None = None
-    mtime: float | None = None
     checksum: str | None = None
     actor: str | None = None
+
     client_ip: str | None = None
     session_pid: int | None = None
-    move_src: str | None = None  # MOVED 事件的源相对路径
+    client_name: str | None = None
+
     details: dict[str, Any] = field(default_factory=dict)
+    mtime: float | None = None
     observed_at: float = field(default_factory=time.time)
 
     def summary(self) -> str:
         return (
-            f"[{self.source.value}] {self.event_type.value} {self.rel_path} "
+            f"{self.event_type.value} {self.rel_path} "
             f"size={self.size} actor={self.actor or '-'} checksum={self.checksum or '-'}"
         )
 

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def event_id_for(ev: FileEvent) -> str:
     """稳定去重 ID：同一来源、路径、时刻、size/checksum 视为同一次变更。"""
     payload = (
-        f"{ev.source.value}:{ev.rel_path}:{ev.observed_at}:{ev.size}:{ev.checksum}:{ev.event_type.value}"
+        f"{ev.rel_path}:{ev.observed_at}:{ev.size}:{ev.checksum}:{ev.event_type.value}"
     )
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"versionwatch://{payload}"))
 
@@ -64,6 +64,7 @@ class Recorder:
                 await self._record_deleted(conn, ev)
             else:
                 await self._record_upsert(conn, ev)
+            
             await conn.commit()
         except psycopg.OperationalError:
             await self._reset_conn()
@@ -84,27 +85,15 @@ class Recorder:
             overwritten=False,
             event_id=event_id_for(ev),
         )
-        await upsert_state(conn, ev.rel_path, None, None, None, prev_version, is_deleted=True)
+        await upsert_state(conn, ev.rel_path, None, ev.mtime, None, prev_version, is_deleted=True)
         if inserted:
             logger.info(
-                "删除已记录 v%03d: %s (actor=%s)", prev_version, ev.rel_path, ev.actor or "-"
+                "删除 v%03d: %s (actor=%s)", prev_version, ev.rel_path, ev.actor or "-"
             )
+
 
     async def _record_upsert(self, conn: Any, ev: FileEvent) -> None:
         prev = await fetch_state(conn, ev.rel_path)
-        if prev is not None and not prev["is_deleted"]:
-            # 内容没有实质变化则跳过（多来源去重）
-            same_content = (
-                (ev.checksum is not None and prev["checksum"] == ev.checksum)
-                or (
-                    ev.checksum is None
-                    and ev.size is not None
-                    and prev["file_size"] == ev.size
-                    and prev["mtime"] == ev.mtime
-                )
-            )
-            if same_content:
-                return
 
         event_type, version, previous_version, overwritten = resolve_version(prev)
         ev.details["version_label"] = f"v{version:03d}"

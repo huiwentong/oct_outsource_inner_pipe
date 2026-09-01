@@ -769,3 +769,25 @@ class FTPUserManager:
                 f"g:{group}",
                 target,
             )
+
+    @classmethod
+    def get_path_group(
+        cls,
+        path: str,
+    ):
+        path_obj = Path(path)
+
+        if not path_obj.exists():
+            raise RuntimeError(f"{path} does not exist!")
+
+        target = str(path_obj)
+
+        result = subprocess.run(
+            ["getfacl", target],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        acl_info = result.stdout.strip()
+        return acl_info

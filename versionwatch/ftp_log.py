@@ -19,11 +19,13 @@ from typing import Optional
 import os
 import re
 from datetime import datetime, timedelta, timezone
+import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from io import TextIOWrapper, BufferedReader
 from logger.core import watch_logger
 from versionwatch.config import Settings
+from versionwatch.hashing import hash_file
 from versionwatch.events import EventSource, EventType, FileEvent, normalize_rel_path
 
 logger = watch_logger
@@ -126,17 +128,20 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
     if local_dt > now_local + timedelta(hours=24):
         local_dt = local_dt.replace(year=local_dt.year - 1)
 
+    timestamp: float = local_dt.timestamp()
+
     return FileEvent(
-        source=EventSource.FTP_LOG,
         event_type=event_type,
         rel_path=rel_path,
-        host_path=(root / rel_path).as_posix(),
         size=size,
-        actor=m.group("user"),
+        client_name=m.group("user"),
         client_ip=m.group("client"),
+        checksum=hash_file(f'{root}{rel_path}'),
+        actor='auto',
         session_pid=int(m.group("pid")),
         move_src=move_src,
         observed_at=local_dt.timestamp(),
+        mtime=timestamp,
         details={
             "raw": raw.strip(),
             "verb": verb,

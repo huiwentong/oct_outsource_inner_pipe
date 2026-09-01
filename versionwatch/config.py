@@ -21,23 +21,26 @@ class Settings(BaseSettings):
     )
 
     # 被监控的 FTP 存储空间挂载点（容器内路径）
-    root_dir: Path = Field(description="FTP 存储根目录（挂载点）")
+    root_dir: Path = Field(default=Path('/srv/ftp'), description="FTP 存储根目录（挂载点）")
 
     # vsftpd 日志文件（包含 OK UPLOAD / OK DELETE / OK RENAME 摘要行）
-    ftp_log: Path = Field(description="vsftpd 日志路径")
+    ftp_log: Path = Field(default=Path('/var/log/vsftpd'), description="vsftpd 日志路径")
 
     # PostgreSQL 连接串
-    database_url: str = Field(description="PostgreSQL DSN")
+    database_url: str = Field(default='postgres', description="PostgreSQL DSN")
 
     # 日志 tail 状态文件（保存 inode/offset，用于重启后续传）
     log_state_file: Path = Path("/var/lib/versionwatch/ftp_log.state")
+
+    # 事件队列文件，用于中途退出保存未执行的队列
+    queue_file: Path = Path("/var/lib/versionwatch/queue.json")
 
     # 首次启动（无状态文件）时的日志起始位置：end 跳过历史 / begin 从头读
     log_start_mode: str = "end"
     log_poll_interval: float = 1.0
 
     # watchdog 事件去抖窗口：同一路径静默 N 秒后才认为写入结束
-    debounce_seconds: float = 5.0
+    debounce_seconds: float = 1.0
 
     # 多来源合并窗口：ftp_log 与 watchdog 事件在此窗口内按路径合并
     merge_window_seconds: float = 10.0
