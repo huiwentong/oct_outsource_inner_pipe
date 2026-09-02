@@ -8,6 +8,7 @@ import os
 import stat as stat_mod
 import time
 from dataclasses import dataclass, field
+import traceback
 from typing import Any
 import json
 from versionwatch.config import Settings
@@ -148,60 +149,63 @@ class Pipeline:
 
         if ev.rel_path.startswith("oct"):
             logger.info('检测到oct文件事件，开始审查权限')
+            try:
+                if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (4,5):
+                    logger.info('检测到新建事件，并且路径为层级正确, 开始赋予权限！')
+                    query = await self.client.get(
+                        "/get_path_group",
+                        params={'_path': str(self.settings.root_dir/ev.rel_path)}
+                    )
+                    query.raise_for_status()
+                    groups = query.json()['acl']
+                    g_list = [g for g in groups if g.startswith('group')]
+                    if len(g_list) >= 2:
+                        logger.info(f'已有组权限{str(g_list)}，跳过！')
+                        return
+                        
 
-            if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (4,5):
-                logger.info('检测到新建事件，并且路径为层级正确, 开始赋予权限！')
-                query = await self.client.post(
-                    "/get_path_group",
-                    params={'_path': str(self.settings.root_dir/ev.rel_path)}
-                )
-                query.raise_for_status()
-                groups = query.json()['acl']
-                g_list = [g for g in groups if g.startswith('group')]
-                if len(g_list) >= 2:
-                    logger.info(f'已有组权限{str(g_list)}，跳过！')
-                    return
-                    
-
-                group = ev.rel_path.split('/')[-1]
-                response = await self.client.post(
-                    "/create_group",
-                    json={
-                        'name': group,
-                        'description': 'auto create',
-                    }
-                )
-                response.raise_for_status()
-                logger.info(response.json())
-
-
-
-                if len(ev.rel_path.split('/')) == 4:
+                    group = ev.rel_path.split('/')[-1]
                     response = await self.client.post(
-                        "/set_path_group",
+                        "/create_group",
                         json={
-                            'path': str(self.settings.root_dir/ev.rel_path),
-                            'group': group,
-                            'rescursive': False,
-                            'inherit': False,
+                            'name': group,
+                            'description': 'auto create',
                         }
                     )
                     response.raise_for_status()
-                    logger.info(f'为资产文件{group}添加权限')
                     logger.info(response.json())
-                elif len(ev.rel_path.split('/')) == 5:
-                    response = await self.client.post(
-                        "/set_path_group",
-                        json={
-                            'path': str(self.settings.root_dir/ev.rel_path),
-                            'group': group,
-                            'rescursive': True,
-                            'inherit': True,
-                        }
-                    )
-                    response.raise_for_status()
-                    logger.info(f'为环节文件{group}添加权限')
-                    logger.info(response.json())
+
+
+
+                    if len(ev.rel_path.split('/')) == 4:
+                        response = await self.client.post(
+                            "/set_path_group",
+                            json={
+                                'path': str(self.settings.root_dir/ev.rel_path),
+                                'group': group,
+                                'rescursive': False,
+                                'inherit': False,
+                            }
+                        )
+                        response.raise_for_status()
+                        logger.info(f'为资产文件{group}添加权限')
+                        logger.info(response.json())
+                    elif len(ev.rel_path.split('/')) == 5:
+                        response = await self.client.post(
+                            "/set_path_group",
+                            json={
+                                'path': str(self.settings.root_dir/ev.rel_path),
+                                'group': group,
+                                'rescursive': True,
+                                'inherit': True,
+                            }
+                        )
+                        response.raise_for_status()
+                        logger.info(f'为环节文件{group}添加权限')
+                        logger.info(response.json())
+            except Exception as e:
+                logger.error(f'权限审查失败，错误信息：{str(e)}')
+                logger.error(traceback.format_exc())
 
         else:
             pass
