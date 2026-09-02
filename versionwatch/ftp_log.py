@@ -243,7 +243,7 @@ class FtpLogTailer:
             logger.error("FTP 日志文件句柄不存在，无法读取")
             raise RuntimeError('can not find self._fh!!')
         size = st.st_size
-        logger.info("FTP 日志文件大小: %d, 当前偏移: %d", size, self._offset)
+        # logger.info("FTP 日志文件大小: %d, 当前偏移: %d", size, self._offset)
         if self._offset > size:
             # 文件被截断（copytruncate）或轮转后变小：从头读
             self._fh.seek(0)
