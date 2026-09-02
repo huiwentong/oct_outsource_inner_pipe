@@ -220,6 +220,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "requests" },
+    { name = "shotgun-api3" },
     { name = "tzdata" },
     { name = "uvicorn" },
     { name = "watchdog" },
@@ -245,6 +246,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "requests", specifier = ">=2.34.2" },
+    { name = "shotgun-api3", specifier = ">=3.10.3" },
     { name = "tzdata", specifier = ">=2024.1" },
     { name = "uvicorn", specifier = ">=0.52.1" },
     { name = "watchdog", specifier = ">=6.0.0" },
@@ -571,6 +573,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
+]
+
+[[package]]
+name = "shotgun-api3"
+version = "3.10.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/1c/0ecceae95e61b93122135111963d14915ba078ce36fc7d536ba7b434097b/shotgun_api3-3.10.3.tar.gz", hash = "sha256:aee469b7aac9963aa858d41719a4d41eab86c68752bdddaeddb048f63c7c1b95", size = 389539, upload-time = "2026-08-06T14:30:28.28Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/84/0a/bda1e55fe4266c6224d35df550cc654aacc81eb75bb359aa2cca2705bd21/shotgun_api3-3.10.3-py2.py3-none-any.whl", hash = "sha256:94168901a8385112104f5a0c2565972e0331b8448182cd2212c0b4f0c4d15c23", size = 356391, upload-time = "2026-08-06T14:30:26.833Z" },
 ]
 
 [[package]]

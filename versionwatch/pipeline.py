@@ -144,12 +144,56 @@ class Pipeline:
 
         if ev.rel_path.startswith("/oct"):
 
-            response = await self.client.post(
-                "/set_path_group",
-                json={}
-            )
-            response.raise_for_status()
-            logger.info(response.json())
+            if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (5,6):
+                query = await self.client.post(
+                    "/get_path_group",
+                    params={'_path': str(self.settings.root_dir/ev.rel_path)}
+                )
+                query.raise_for_status()
+                groups = query.json()['acl']
+                g_list = [g for g in groups if g.startswith('group')]
+                if len(g_list) >= 2:
+                    return
+                    
+
+                group = ev.rel_path.split('/')[-1]
+                response = await self.client.post(
+                    "/create_group",
+                    json={
+                        'name': group,
+                        'description': 'auto create',
+                    }
+                )
+                response.raise_for_status()
+                logger.info(response.json())
+
+
+
+                if len(ev.rel_path.split('/')) == 5:
+                    response = await self.client.post(
+                        "/set_path_group",
+                        json={
+                            'path': str(self.settings.root_dir/ev.rel_path),
+                            'group': group,
+                            'rescursive': False,
+                            'inherit': False,
+                        }
+                    )
+                    response.raise_for_status()
+                    logger.info(response.json())
+                elif len(ev.rel_path.split('/')) == 6:
+                    response = await self.client.post(
+                        "/set_path_group",
+                        json={
+                            'path': str(self.settings.root_dir/ev.rel_path),
+                            'group': group,
+                            'rescursive': True,
+                            'inherit': True,
+                        }
+                    )
+                    response.raise_for_status()
+                    logger.info(response.json())
+
         else:
             pass
 

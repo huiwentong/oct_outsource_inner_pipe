@@ -17,7 +17,7 @@ def test_requests():
             '_path': '/srv/ftp/oct/mk2/asset/dasheng'
         }
     )
-    pprint(res.json()['deatail'])
+    pprint(res.json()['detail'])
 
 if __name__ == '__main__':
     test_requests()
