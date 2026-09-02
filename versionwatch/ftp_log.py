@@ -259,7 +259,7 @@ class FtpLogTailer:
         for raw_line in text.splitlines():
             ev = parse_ftp_line(raw_line, self.settings.root_dir, self._tz)
             if ev is not None:
-                logger.info("FTP 发现新的事件: %s", size, self._offset, ev.summary())
+                logger.info("FTP 发现新的事件: %s", ev.summary())
                 emit(ev)
         self._save_state()
 
