@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS file_events (
     actor            TEXT,
     
     client_ip        TEXT,
-    session_id INTEGER,
-    client_name        TEXT,
+    session_id       INTEGER,
+    client_name      TEXT,
     
     version          INTEGER NOT NULL,
     previous_version INTEGER,
@@ -149,7 +149,7 @@ async def insert_history(
         """
         INSERT INTO file_events (
             event_type, rel_path, file_size, mtime, checksum,
-            actor, client_ip, client_name, session_pid, version, previous_version, overwritten, details, observed_at
+            actor, client_ip, client_name, session_id, version, previous_version, overwritten, details, observed_at
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
         """,
         (
