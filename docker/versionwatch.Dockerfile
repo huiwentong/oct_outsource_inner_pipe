@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # versionwatch 镜像：使用 uv 安装依赖后运行常驻 daemon
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
