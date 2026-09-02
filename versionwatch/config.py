@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     ftp_log: Path = Field(default=Path('/var/log/vsftpd'), description="vsftpd 日志路径")
 
     # PostgreSQL 连接串
-    database_url: str = Field(default='postgres', description="PostgreSQL DSN")
+    database_url: str = Field(default='postgresql://admin:123456@postgres:5432/outsource_inner_pipe', description="PostgreSQL DSN")
 
     # 日志 tail 状态文件（保存 inode/offset，用于重启后续传）
     log_state_file: Path = Path("/var/lib/versionwatch/ftp_log.state")
