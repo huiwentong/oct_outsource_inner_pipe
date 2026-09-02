@@ -147,9 +147,9 @@ class Pipeline:
         await self.recorder.record(ev)
 
 
-        if ev.rel_path.startswith("oct") or ev.rel_path.startswith("/oct"):
+        if ev.rel_path.startswith("oct"):
 
-            if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (5,6):
+            if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (4,5):
                 query = await self.client.post(
                     "/get_path_group",
                     params={'_path': str(self.settings.root_dir/ev.rel_path)}
@@ -174,7 +174,7 @@ class Pipeline:
 
 
 
-                if len(ev.rel_path.split('/')) == 5:
+                if len(ev.rel_path.split('/')) == 4:
                     response = await self.client.post(
                         "/set_path_group",
                         json={
@@ -187,7 +187,7 @@ class Pipeline:
                     response.raise_for_status()
                     logger.info(f'为资产文件{group}添加权限')
                     logger.info(response.json())
-                elif len(ev.rel_path.split('/')) == 6:
+                elif len(ev.rel_path.split('/')) == 5:
                     response = await self.client.post(
                         "/set_path_group",
                         json={
