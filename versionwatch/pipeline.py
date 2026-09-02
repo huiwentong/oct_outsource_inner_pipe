@@ -73,13 +73,18 @@ class Pipeline:
         self._stop.set()
 
     async def run(self) -> None:
-        logger.info("事件流水线启动")
+        logger.info("事件流水线 pipline启动")
         while not self._stop.is_set():
             try:
                 ev = await asyncio.wait_for(self.queue.get(), timeout=0.5)
             except asyncio.TimeoutError:
                 ev = None
             if ev is not None:
+                logger.info(
+                    "pipeline 捕获到事件 %s，队列剩余 %d",
+                    ev.summary(),
+                    self.queue.qsize(),
+                )
                 await self._process_event(ev)
 
         # 退出前把剩余未处理事件强制保存
@@ -290,26 +295,26 @@ class Pipeline:
     #     return ev
 
     # async def _finalize(self, ev: FileEvent) -> None:
-        """落库前补充最新 stat 信息；文件已不存在则转为 deleted。"""
-        if ev.event_type == EventType.DELETED:
-            return
-        try:
-            st = os.stat(ev.host_path, follow_symlinks=False)
-        except OSError:
-            ev.event_type = EventType.DELETED
-            return
-        if not stat_mod.S_ISREG(st.st_mode):
-            ev.event_type = EventType.DELETED
-            return
-        ev.size = st.st_size
-        ev.mtime = st.st_mtime
-        if ev.checksum is None and self.settings.hash_on_event:
-            max_bytes = self.settings.hash_on_event_max_bytes
-            if max_bytes == 0 or ev.size <= max_bytes:
-                ev.checksum = await asyncio.to_thread(
-                    hash_file,
-                    ev.host_path,
-                    self.settings.hash_algo,
-                    self.settings.chunk_size,
-                    0,
-                )
+        # """落库前补充最新 stat 信息；文件已不存在则转为 deleted。"""
+        # if ev.event_type == EventType.DELETED:
+        #     return
+        # try:
+        #     st = os.stat(ev.rel_path, follow_symlinks=False)
+        # except OSError:
+        #     ev.event_type = EventType.DELETED
+        #     return
+        # if not stat_mod.S_ISREG(st.st_mode):
+        #     ev.event_type = EventType.DELETED
+        #     return
+        # ev.size = st.st_size
+        # ev.mtime = st.st_mtime
+        # if ev.checksum is None and self.settings.hash_on_event:
+        #     max_bytes = self.settings.hash_on_event_max_bytes
+        #     if max_bytes == 0 or ev.size <= max_bytes:
+        #         ev.checksum = await asyncio.to_thread(
+        #             hash_file,
+        #             ev.rel_path,
+        #             self.settings.hash_algo,
+        #             self.settings.chunk_size,
+        #             0,
+        #         )

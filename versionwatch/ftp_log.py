@@ -202,6 +202,7 @@ class FtpLogTailer:
         self.close()
 
     async def run(self, emit) -> None:
+        logger.info('ftptailer 启动， 开始循环')
         while self.stop_event.is_set() is False:
             try:
                 await self._tick(emit)
@@ -243,7 +244,6 @@ class FtpLogTailer:
             logger.error("FTP 日志文件句柄不存在，无法读取")
             raise RuntimeError('can not find self._fh!!')
         size = st.st_size
-        # logger.info("FTP 日志文件大小: %d, 当前偏移: %d", size, self._offset)
         if self._offset > size:
             # 文件被截断（copytruncate）或轮转后变小：从头读
             self._fh.seek(0)
@@ -255,9 +255,11 @@ class FtpLogTailer:
         data = self._fh.read(to_read)
         self._offset = self._fh.tell()
         text = data.decode("utf-8", errors="replace")
+        logger.info("FTP 日志文件大小: %d, 当前偏移: %d", size, self._offset)
         for raw_line in text.splitlines():
             ev = parse_ftp_line(raw_line, self.settings.root_dir, self._tz)
             if ev is not None:
+                logger.info("FTP 发现新的事件: %s", size, self._offset, ev.summary())
                 emit(ev)
         self._save_state()
 
