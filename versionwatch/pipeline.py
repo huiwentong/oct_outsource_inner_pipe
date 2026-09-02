@@ -146,10 +146,11 @@ class Pipeline:
     async def _process_event(self, ev: FileEvent) -> None:
         await self.recorder.record(ev)
 
-
         if ev.rel_path.startswith("oct"):
+            logger.info('检测到oct文件事件，开始审查权限')
 
             if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (4,5):
+                logger.info('检测到新建事件，并且路径为层级正确, 开始赋予权限！')
                 query = await self.client.post(
                     "/get_path_group",
                     params={'_path': str(self.settings.root_dir/ev.rel_path)}
@@ -158,6 +159,7 @@ class Pipeline:
                 groups = query.json()['acl']
                 g_list = [g for g in groups if g.startswith('group')]
                 if len(g_list) >= 2:
+                    logger.info(f'已有组权限{str(g_list)}，跳过！')
                     return
                     
 
