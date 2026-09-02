@@ -17,13 +17,6 @@ dependencies = [
     "shotgun-api3>=3.10.3",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-]
-
-[project.scripts]
-versionwatch = "versionwatch.daemon:main"
 
 [dependency-groups]
 dev = [
@@ -35,6 +28,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 
-[tool.pytest.ini_options]
-testpaths = ["versionwatch/tests"]
-addopts = "-q"
+

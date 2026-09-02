@@ -27,7 +27,7 @@ RUN uv sync --no-dev --no-install-project
 
 COPY permissionmanager ./permissionmanager
 COPY logger ./logger
-RUN uv sync --no-dev --frozen
+RUN uv sync --no-dev --frozen --no-install-project
 
 RUN chmod +x /entrypoint.sh
 
