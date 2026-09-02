@@ -137,7 +137,7 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
         size=size,
         client_name=m.group("user"),
         client_ip=m.group("client"),
-        checksum=hash_file(f'{root}{rel_path}'),
+        checksum=hash_file(f'{root}/{rel_path}'),
         actor='auto',
         session_pid=int(m.group("pid")),
         move_src=move_src,
