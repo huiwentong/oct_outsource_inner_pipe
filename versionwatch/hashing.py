@@ -17,6 +17,14 @@ def hash_file(
     size = os.path.getsize(path)
     if max_bytes and size > max_bytes:
         return None
+
+    if os.path.islink(path):
+        # 跳过符号链接，避免循环引用
+        return None
+    if not os.path.isfile(path):
+        # 跳过非普通文件（目录、FIFO、socket 等）
+        return None
+    
     digest = hashlib.new(algo)
     with open(path, "rb") as fh:
         while True:

@@ -130,7 +130,6 @@ def parse_ftp_line(raw: str, root: Path, tz: ZoneInfo | timezone) -> FileEvent |
         local_dt = local_dt.replace(year=local_dt.year - 1)
 
     timestamp: float = local_dt.timestamp()
-
     return FileEvent(
         event_type=event_type,
         rel_path=rel_path,
