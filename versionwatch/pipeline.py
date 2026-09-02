@@ -147,7 +147,7 @@ class Pipeline:
         await self.recorder.record(ev)
 
 
-        if ev.rel_path.startswith("/oct"):
+        if ev.rel_path.startswith("oct") or ev.rel_path.startswith("/oct"):
 
             if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (5,6):
                 query = await self.client.post(
