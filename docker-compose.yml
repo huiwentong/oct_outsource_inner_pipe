@@ -15,7 +15,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U versionwatch -d versionwatch"]
+      test: ["CMD-SHELL", "pg_isready -U admin  -d outsource_inner_pipe"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -26,10 +26,10 @@ services:
       context: .
       dockerfile: docker/versionwatch.Dockerfile
     environment:
-      VW_ROOT_DIR: /srv/ftp
-      VW_FTP_LOG: /var/log/vsftpd/vsftpd.log
-      VW_DATABASE_URL: postgresql://versionwatch:versionwatch@postgres:5432/versionwatch
-      VW_LOG_STATE_FILE: /var/lib/versionwatch/ftp_log.state
+      # VW_ROOT_DIR: /srv/ftp
+      # VW_FTP_LOG: /var/log/vsftpd/vsftpd.log
+      # VW_DATABASE_URL: postgresql://versionwatch:versionwatch@postgres:5432/versionwatch
+      # VW_LOG_STATE_FILE: /var/lib/versionwatch/ftp_log.state
       VW_LOG_LEVEL: INFO
     volumes:
       - ftpdata:/srv/ftp
