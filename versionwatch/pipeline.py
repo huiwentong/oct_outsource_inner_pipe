@@ -157,7 +157,7 @@ class Pipeline:
                         params={'_path': str(self.settings.root_dir/ev.rel_path)}
                     )
                     query.raise_for_status()
-                    groups = query.json()['acl']
+                    groups = query.json()['detail']['acl']
                     g_list = [g for g in groups if g.startswith('group')]
                     if len(g_list) >= 2:
                         logger.info(f'已有组权限{str(g_list)}，跳过！')
