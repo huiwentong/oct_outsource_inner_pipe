@@ -15,6 +15,7 @@ import asyncio
 import json
 import signal
 import logging
+import traceback
 from typing import Optional
 import os
 import re
@@ -208,6 +209,7 @@ class FtpLogTailer:
             except FileNotFoundError:
                 # 日志文件被轮转删除/尚未创建：复位，等待下个 tick
                 logger.warning("FTP 日志文件不存在，等待创建...")
+                logger.error(traceback.format_exc())
                 if self._fh is not None:
                     self._fh.close()
                     self._fh = None

@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # 首次启动（无状态文件）时的日志起始位置：end 跳过历史 / begin 从头读
     log_start_mode: str = "end"
-    log_poll_interval: float = 1.0
+    log_poll_interval: float = 3.0
 
     # watchdog 事件去抖窗口：同一路径静默 N 秒后才认为写入结束
     debounce_seconds: float = 1.0
