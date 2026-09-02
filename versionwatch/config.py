@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     root_dir: Path = Field(default=Path('/srv/ftp'), description="FTP 存储根目录（挂载点）")
 
     # vsftpd 日志文件（包含 OK UPLOAD / OK DELETE / OK RENAME 摘要行）
-    ftp_log: Path = Field(default=Path('/var/log/vsftpd'), description="vsftpd 日志路径")
+    ftp_log: Path = Field(default=Path('/var/log/vsftpd/vsftpd.log'), description="vsftpd 日志路径")
 
     # PostgreSQL 连接串
     database_url: str = Field(default='postgresql://admin:123456@postgres:5432/outsource_inner_pipe', description="PostgreSQL DSN")
