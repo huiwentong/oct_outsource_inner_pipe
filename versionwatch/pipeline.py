@@ -185,6 +185,7 @@ class Pipeline:
                         }
                     )
                     response.raise_for_status()
+                    logger.info(f'为资产文件{group}添加权限')
                     logger.info(response.json())
                 elif len(ev.rel_path.split('/')) == 6:
                     response = await self.client.post(
@@ -197,6 +198,7 @@ class Pipeline:
                         }
                     )
                     response.raise_for_status()
+                    logger.info(f'为环节文件{group}添加权限')
                     logger.info(response.json())
 
         else:
