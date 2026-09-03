@@ -548,6 +548,11 @@ class FTPUserManager:
             check=True
         )
 
+        subprocess.run(
+            ["rm", "-rf", f'/srv/ftp/{username}'],
+            check=True
+        )
+
 
     @classmethod
     def create_group(cls, groupname, description, db=True, gid:str=''):
