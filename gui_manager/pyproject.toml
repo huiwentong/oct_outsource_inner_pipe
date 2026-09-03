@@ -1,0 +1,14 @@
+[project]
+name = "collector"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg2-binary>=2.9.12",
+    "psycopg[binary]>=3.3.5",
+    "pyside6>=6.11.2",
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+    "shotgun-api3>=3.10.3",
+]

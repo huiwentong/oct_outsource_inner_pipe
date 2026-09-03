@@ -150,7 +150,7 @@ class Pipeline:
         if ev.rel_path.startswith("oct"):
             logger.info('检测到oct文件事件，开始审查权限')
             try:
-                if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (4,5):
+                if ev.event_type == EventType.CREATED and len(ev.rel_path.split('/')) in (2,4,5):
                     logger.info('检测到新建事件，并且路径为层级正确, 开始赋予权限！')
                     query = await self.client.get(
                         "/get_path_group",
@@ -177,7 +177,7 @@ class Pipeline:
 
 
 
-                    if len(ev.rel_path.split('/')) == 4:
+                    if len(ev.rel_path.split('/')) in (4, 2):
                         response = await self.client.post(
                             "/set_path_group",
                             json={
@@ -188,7 +188,10 @@ class Pipeline:
                             }
                         )
                         response.raise_for_status()
-                        logger.info(f'为资产文件{group}添加权限')
+                        if len(ev.rel_path.split('/')) == 4:
+                            logger.info(f'为资产文件{group}添加权限')
+                        else:
+                            logger.info(f'为项目文件{group}添加权限')
                         logger.info(response.json())
                     elif len(ev.rel_path.split('/')) == 5:
                         response = await self.client.post(
