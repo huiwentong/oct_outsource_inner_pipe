@@ -611,7 +611,13 @@ class FTPUserManager:
             if cls.group_exists(groupname):
                 return [cls.db.get_group_by_name(groupname)]
         
-        return cls.db.get_groups()
+        groups = []
+        for group in grp.getgrall():
+            # db_group = cls.db.get_group_by_name(group.gr_name)
+            # if db_group:
+            groups.append(group.gr_name)
+
+        return groups
 
     @classmethod
     def set_user_group(cls, username, groupnames,db=True):
