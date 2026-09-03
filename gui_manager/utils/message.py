@@ -6,26 +6,31 @@ import json
 
 
 def send_simple_message(msg, title, user):
-    uid = user['sg_dingtalk_id']
+    uid = user
     url = 'http://192.168.20.217:8080/ding/msg/simple'
 
     mk_message = """
-# 🚀 制片给您发布了新的外包数据
+# 🚀 管理员给您创建了账户！
 ___
-* ***通知信息:***  {message}
+ftp地址和密码为重要信息，请妥善保管！
 ***
-| 任务信息 | 查询结果 |
+| 账户信息 | 值 |
 | :--- | :---: | 
-| 资产 | {entitiy} | 
-| 环节 | {step} |
-| ftp位置 | {ftppath} |
+| 用户名称 | {username} | 
+| 用户密码 | {password} |
+| 用户id | {user_id} |
+| ftp端口 | {frp_port} |
+| ftp地址 | {frp_address} |
+| 用户目录 | {frp_home} |
 ***
 `发送时间： {datetime_now}`
 """.format(
-           message=msg['message'],
-           entitiy=msg['entitiy'],
-           step=msg['step'],
-           ftppath=msg['ftppath'],
+           username=msg['username'],
+           password=msg['password'],
+           user_id=msg['user_id'],
+           frp_port=msg['frp_port'],
+           frp_address=msg['frp_address'],
+           frp_home=msg['frp_home'],
            datetime_now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     post_data = {

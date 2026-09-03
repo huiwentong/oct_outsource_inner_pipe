@@ -442,7 +442,7 @@ class UserManagerWindow(QMainWindow):
                 self,
                 "创建成功",
                 f"外包方用户「{result.get('username', '')}」已创建成功。\n"
-                f"{message}",
+                f"密码：{result.get('password')}",
             )
             self._reset_form()
             # 预留：创建成功后的后续动作（发送通知、开通权限等）
@@ -450,7 +450,7 @@ class UserManagerWindow(QMainWindow):
             # 刷新删除面板列表，让新用户立即可见
             self._load_users()
         else:
-            # 失败：保留当前输入状态，方便修改后重试
             self.status_label.setText(message)
+            print(result)
             QMessageBox.critical(self, "创建失败", message)
             self._refresh_state()

@@ -1,4 +1,5 @@
 from components.core import FieldSpec, StepComponent, register
+
 @register
 class EfxComponent(StepComponent):
     step = "efx"

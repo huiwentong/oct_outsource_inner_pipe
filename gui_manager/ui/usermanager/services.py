@@ -6,7 +6,7 @@ TODO(后续补充): 以下为演示用的 mock 逻辑，
 """
 
 from __future__ import annotations
-
+from utils.message import send_simple_message
 from typing import Any
 import getpass
 from utils.permissionmanager import (
@@ -57,8 +57,8 @@ def create_vendor_user(data: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]
             email=data.get('email'),
             password=data.get('password')
         )
-
-        if ret.get('message') == 'User created succussfuly':
+        print(ret)
+        if ret.get('message') == 'User created successfully':
             password = ret.get('userpswd')
             uid = ret.get('userid')
         else:
@@ -68,6 +68,8 @@ def create_vendor_user(data: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]
         return True, "创建成功", {
             "username": username,
             "user_id": uid,
+            "ding_id": data.get('ding_id'),
+            "email": data.get('email'),
             "password": password,
             "frp_address": c['server_ip'],
             "frp_port": c['ftp_port'],
@@ -101,9 +103,13 @@ def delete_vendor_user(name: str) -> tuple[bool, str]:
         return False, f"删除失败：{exc}"
 
 
-def continue_after_success(user: dict[str, Any]) -> None:
-    """执行成功后的后续动作（预留）。
-
-    TODO(后续补充): 例如给外包方发送账号 / 密码通知、开通目录权限等。
-    """
-    print(f"[mock] 创建成功后的后续动作已触发: {user.get('username')}")
+def continue_after_success(data: dict[str, Any]) -> None:
+    m_data = {
+        'username': data['username'],
+        'password': data['password'],
+        'user_id': data['user_id'],
+        'frp_port': data['frp_port'],
+        'frp_address': data['frp_address'],
+        'frp_home': data['frp_home'],
+    }
+    send_simple_message(m_data, '新账户创建成功！', data['ding_id'])
