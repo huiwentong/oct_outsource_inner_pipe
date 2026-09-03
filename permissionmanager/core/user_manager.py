@@ -539,19 +539,19 @@ class FTPUserManager:
 
     @classmethod
     def delete_user(cls, username, db=True):
+        subprocess.run(
+            ["rm", "-rf", f'/srv/ftp/{username}'],
+            check=True
+        )
         if not FTPUserManager.user_exists(username):
             return
         if db:
             cls.db.delete_user(username)
         subprocess.run(
-            ["userdel", "-r", username],
+            ["userdel", username],
             check=True
         )
 
-        subprocess.run(
-            ["rm", "-rf", f'/srv/ftp/{username}'],
-            check=True
-        )
 
 
     @classmethod
