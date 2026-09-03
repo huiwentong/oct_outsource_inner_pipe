@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from typing import Any
 import getpass
-from utils.permissionmanager import create_user
+from utils.permissionmanager import (
+    create_user,
+    delete_user as pm_delete_user,
+    get_all_user as pm_get_all_user,
+)
 from utils.config import server_config
 import traceback
 
@@ -72,6 +76,29 @@ def create_vendor_user(data: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]
     except:
         traceback.print_exc()
         return False, "创建失败！", {'traceback': traceback.format_exc()}
+
+
+def fetch_all_users() -> list[dict[str, Any]]:
+    """获取所有外包方人员，供删除面板展示。
+
+    数据源：utils.permissionmanager.get_all_user()（GET /get_user）。
+    """
+    ret = pm_get_all_user()
+    if not isinstance(ret, dict):
+        return []
+    return ret.get("users") or []
+
+
+def delete_vendor_user(name: str) -> tuple[bool, str]:
+    """删除指定外包方用户。
+
+    数据源：utils.permissionmanager.delete_user()（DELETE /users/{name}）。
+    """
+    try:
+        pm_delete_user(name)
+        return True, f"外包方用户「{name}」已删除"
+    except Exception as exc:
+        return False, f"删除失败：{exc}"
 
 
 def continue_after_success(user: dict[str, Any]) -> None:

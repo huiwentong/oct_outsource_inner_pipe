@@ -603,12 +603,7 @@ class FTPUserManager:
             if cls.user_exists(username):
                 return [cls.db.get_user_by_name(username)]
 
-        users = []
-        for user in pwd.getpwall():
-            # db_user = cls.db.get_user_by_name(user.pw_name)
-            # if db_user:
-            users.append(user.pw_name)
-        return users
+        return cls.db.get_users()
 
     @classmethod
     def get_group(cls,groupname=None):
@@ -616,13 +611,7 @@ class FTPUserManager:
             if cls.group_exists(groupname):
                 return [cls.db.get_group_by_name(groupname)]
         
-        groups = []
-        for group in grp.getgrall():
-            # db_group = cls.db.get_group_by_name(group.gr_name)
-            # if db_group:
-            groups.append(group.gr_name)
-
-        return groups
+        return cls.db.get_groups()
 
     @classmethod
     def set_user_group(cls, username, groupnames,db=True):

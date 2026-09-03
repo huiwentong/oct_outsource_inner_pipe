@@ -43,20 +43,14 @@ def create_user(
         },
     )
 
-def delete_user(
-    name: str,
-) -> dict[str, Any]:
-    """新增外包方用户（账号 / FTP 目录 / 通知信息）。"""
-    return _request(
-        "DELETE",
-        f"/users/{name}"
-    )
+def delete_user(name: str) -> Any:
+    """删除外包方用户（账号 / FTP 目录 / 权限一并移除）。"""
+    return _request("DELETE", f"/users/{name}")
+
 
 def get_all_user() -> dict[str, Any]:
-    return _request(
-        "GET",
-        "/get_user"
-    )
+    """获取所有外包方用户，返回 /get_user 的完整响应：{"users": [...]}。"""
+    return _request("GET", "/get_user")
 
 def add_group2vendor(vender: str, groups: list[str]) -> dict[str, Any]:
     """把外包方用户 vender 追加到一组权限 group 中。"""
