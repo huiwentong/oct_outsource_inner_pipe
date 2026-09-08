@@ -66,11 +66,14 @@ class FtpClient:
                 pass  # 目录已存在
 
     def upload_file(self, local_path: Path, remote_path: str) -> None:
+        remote_path = remote_path.replace("\\", "/")
+        self.ensure_remote_dir(self._ftp, str(Path(remote_path).parent))
         with Path(local_path).open("rb") as fh:
             self._ftp.storbinary(f"STOR {remote_path}", fh)
 
     def upload_dir(self, local_dir: Path, remote_dir: str) -> None:
         """递归上传本地目录到远程目录。"""
+        remote_dir = remote_dir.replace("\\", "/")
         self.ensure_remote_dir(self._ftp, remote_dir)
         local_dir = Path(local_dir)
 

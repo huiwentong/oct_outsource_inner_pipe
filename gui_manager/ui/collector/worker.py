@@ -50,8 +50,8 @@ class CollectWorker(QObject):
                         assettype=component.entity_type,
                         step=component.step,
                         description=component.description,
-                        transformer_files=component.transfer_folders,
-                        rely_groups=component.rely_assets + component.rely_steps,
+                        transformer_files=list(component.transfer_folders.keys()),
+                        rely_groups=component.rely_assets + component.rely_steps + [component.project],
                     )
                 except Exception as exc:
                     error = f"第 {index}/{total} 项失败（{message}）：{exc} "+traceback.format_exc()

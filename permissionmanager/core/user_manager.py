@@ -539,6 +539,7 @@ class FTPUserManager:
                 ["chown", f"{username}:oip_admin", home],
                 check=True,
             )
+            logger.info(f'check!******************** {username}创建用户目录{home}且赋予权限！*******************')
             subprocess.run(
                 ["chmod", "2750", home],
                 check=True,
