@@ -8,7 +8,7 @@ from typing import Any, Optional, Type, Union
 from PySide6 import QtCore, QtWidgets
 import components  # noqa: F401  仅为 auto-discover 提供包路径
 from typing import ClassVar
-from utils.permissionmanager import add_group2vendor
+from utils.permissionmanager import add_group2vendor, create_group
 from pathlib import Path
 from utils.ftp import FtpClient
 
@@ -108,14 +108,24 @@ class StepComponent:
             self.transfer_folders[i] = str(Path(self.ftp_tar) / Path(i).name)
 
 
-    def start_collcotion(self, vendor):
+    def start_collection(self, vendor):
         self.check_relies_folders()
-        ret = add_group2vendor(vender=vendor, groups=self.rely_assets+self.rely_steps)
+        all_group = self.rely_assets+self.rely_steps+[self.project]
+        for _g in all_group:
+            r = create_group(_g)
+            print(r)
+        ret = add_group2vendor(vender=vendor, groups=all_group)
         print(ret)
         for source, dst in self.transfer_folders.items():
             with FtpClient() as ftp:
-                ftp.upload_dir(Path(source), dst)
-        
+                path_s = Path(source)
+                if not path_s.exists():
+                    raise FileExistsError(f'file {source} dose not exist!')
+                if path_s.is_dir():
+                    ftp.upload_dir(Path(source), dst)
+                else:
+                    ftp.upload_file(Path(source), dst)
+
 
 
     def check_relies_folders(self):

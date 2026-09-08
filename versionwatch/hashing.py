@@ -14,7 +14,10 @@ def hash_file(
     max_bytes: int = 0,
 ) -> str | None:
     """计算文件摘要；``max_bytes > 0`` 且文件超过该大小时返回 None（跳过）。"""
-    size = os.path.getsize(path)
+    try:
+        size = os.path.getsize(path)
+    except:
+        return None
     if max_bytes and size > max_bytes:
         return None
 

@@ -36,7 +36,7 @@ class FtpClient:
         self.host = host or cfg.get("server_ip", "127.0.0.1")
         self.port = port or int(cfg.get("ftp_port", 21))
         self.user = user or cfg.get("ftp_user", "")
-        self.password = password or cfg.get("ftp_pass", "")
+        self.password = password or str(cfg.get("ftp_pass", ""))
 
     def connect(self) -> FTP:
         ftp = FTP()

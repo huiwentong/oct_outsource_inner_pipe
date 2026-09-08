@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional
-import getpass
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QThread, QTimer
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -34,6 +33,8 @@ from ui.collector.mock_data import (
 )
 from utils.db import Database
 from ui.collector.task_row import TaskRow
+from ui.collector.processor import Processor
+from ui.collector.worker import CollectWorker
 from ui.widgets import PopupStyledComboBox
 from ui.window_utils import keep_window_on_screen
 
@@ -60,6 +61,10 @@ class CollectorWindow(QMainWindow):
         self._rows_maximized = False
         self.db = Database()
         self._placed_once = False
+        self._collecting = False
+        self._processor: Optional[Processor] = None
+        self._collect_thread: Optional[QThread] = None
+        self._collect_worker: Optional[CollectWorker] = None
 
         self.setWindowTitle("Collector · 制片资产抓包工具")
         self.resize(1160, 820)
@@ -509,27 +514,61 @@ class CollectorWindow(QMainWindow):
     # ---------- 开始抓包 ----------
 
     def _start_collect(self) -> None:
+        if self._collecting or not self._rows:
+            return
+
         vendor = self.vendor_combo.currentText().strip()
         project_name_zh = project_name(self.project_id or "")
         print("=" * 66)
         print(f"[开始抓包] 项目: {project_name_zh} | 外包方: {vendor}")
         print(f"[开始抓包] 共 {len(self._rows)} 项任务:")
-        for row in self._rows:
-            row.component.start_collcotion(vendor)
-            self.db.add_collection_history(
-                username=getpass.getuser(),
-                vendorname=vendor,
-                asset=row.component.entity,
-                assettype=row.component.entity_type,
-                step=row.component.step,
-                description=row.component.description,
-                transformer_files=row.component.transfer_folders,
-                rely_groups=row.component.rely_assets+row.component.rely_steps
-            )
-        print("=" * 66)
 
-        QMessageBox.information(
-            self,
-            "抓包完成",
-            f"已执行 {len(self._rows)} 项抓包任务。\n"
-        )
+        # 把长耗时任务挪到子线程执行，避免卡住界面
+        components = [row.component for row in self._rows]
+        self._collecting = True
+        self.start_btn.setEnabled(False)
+
+        self._processor = Processor(total=len(components), parent=self)
+        self._collect_worker = CollectWorker(components, vendor, db=self.db)
+        self._collect_thread = QThread(self)
+        self._collect_thread.setObjectName("collect_worker_thread")
+        self._collect_worker.moveToThread(self._collect_thread)
+
+        self._collect_thread.started.connect(self._collect_worker.run)
+        self._collect_worker.progress.connect(self._processor.set_progress)
+        self._collect_worker.completed.connect(self._on_collect_completed)
+        self._collect_worker.completed.connect(self._collect_thread.quit)
+        self._collect_worker.completed.connect(self._collect_worker.deleteLater)
+        self._collect_thread.finished.connect(self._collect_thread.deleteLater)
+        self._collect_thread.finished.connect(self._on_collect_thread_finished)
+
+        self._processor.show()
+        self._collect_thread.start()
+
+    def _on_collect_completed(self, result: dict) -> None:
+        """全部任务执行结束：关闭进度弹窗，成功时刷新 region3。"""
+        self._collecting = False
+
+        if result.get("ok"):
+            done = result.get("done", 0)
+            self._processor.mark_finished()
+            self._refresh_region3()
+            QMessageBox.information(
+                self,
+                "抓包完成",
+                f"已执行 {done} 项抓包任务。\n",
+            )
+        else:
+            self._processor.mark_finished()
+            QMessageBox.critical(
+                self,
+                "抓包失败",
+                result.get("error") or "执行过程中出现未知错误",
+            )
+            self._update_state()
+
+    def _on_collect_thread_finished(self) -> None:
+        """线程结束后的资源清理。"""
+        self._processor = None
+        self._collect_worker = None
+        self._collect_thread = None

@@ -60,6 +60,14 @@ def add_group2vendor(vender: str, groups: list[str]) -> dict[str, Any]:
         json={"uname": vender, "gnames": groups},
     )
 
+def create_group(group_name):
+    return _request(
+        "POST",
+        "/create_group",
+        json={"name": group_name,"description": "create in collector auto"},
+    )
+
+
 
 def get_user_groups(uname: str) -> list[str]:
     ret = _request("GET", "/user_groups", params={"uname": uname})
