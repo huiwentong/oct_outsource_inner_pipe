@@ -119,12 +119,12 @@ def fill_by_db():
             db=False
         )
 
-        all_groups = [g['name'] for g in db.get_groups()]
-        FTPUserManager.set_user_group(
-            username='oip_admin',
-            groupnames=all_groups,
-            db=False
-        )
+        # all_groups = [g['name'] for g in db.get_groups()]
+        # FTPUserManager.set_user_group(
+        #     username='oip_admin',
+        #     groupnames=all_groups,
+        #     db=False
+        # )
 
 def acl_has_group(path: Path, group: str) -> bool:
     result = subprocess.run(
