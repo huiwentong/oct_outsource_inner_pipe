@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from components.core import StepComponent, get_component, step_options
+from components.core import StepComponent, get_component, step_options, inspect_component
 from ui.collector.mock_data import (
     PROJECTS,
     get_project_entities_mock,
@@ -36,6 +36,8 @@ from ui.collector.task_row import TaskRow
 from ui.collector.processor import Processor
 from ui.collector.worker import CollectWorker
 from ui.widgets import PopupStyledComboBox
+from utils.message import send_pack_collection_message
+import getpass
 from ui.window_utils import keep_window_on_screen
 
 STEPS_HINT = "每个资产/实体至少选择一个环节，数据才会进入下方补充资料区"
@@ -468,7 +470,7 @@ class CollectorWindow(QMainWindow):
         for entity, _type in entities:
             for step in steps:
                 component: StepComponent = get_component(step)(self.project_name, entity, _type)
-                row = TaskRow(self.project_name or "", entity, _type, component)
+                row = TaskRow(self.project_name or "", entity, _type, component, step)
                 self._rows.append(row)
                 self.rows_layout.insertWidget(
                     self.rows_layout.count() - 1,
@@ -517,6 +519,15 @@ class CollectorWindow(QMainWindow):
         if self._collecting or not self._rows:
             return
 
+        for row in self._rows:
+            if not row.component.transfer_folders:
+                QMessageBox.warning(
+                    self,
+                    "没有找到任何可抓包文件！",
+                    f"请先检查 {row.entity} · {row.component.name} 的补充资料是否完整",
+                )
+                return
+
         vendor = self.vendor_combo.currentText().strip()
         project_name_zh = project_name(self.project_id or "")
         print("=" * 66)
@@ -558,6 +569,24 @@ class CollectorWindow(QMainWindow):
                 "抓包完成",
                 f"已执行 {done} 项抓包任务。\n",
             )
+            vendor_dingtalk = self.db.get_user_dingid(self.vendor_combo.currentText().strip())
+            description = ''
+            assets = ''
+            steps = set()
+            for row in self._rows:
+                description += f'{row.project}|{row.entity}|{row.step}备注： {row.component.description}\n'
+                assets += f'{row.entity}, '
+                steps.add(row.step)
+
+            msg = {
+                'description': description,
+                'rely_assets': assets,
+                'rely_steps': ', '.join(list(steps)),
+                'user': getpass.getuser(),
+            }
+
+            ret = send_pack_collection_message(msg, vendor_dingtalk)
+            print(ret)
         else:
             self._processor.mark_finished()
             QMessageBox.critical(

@@ -75,6 +75,18 @@ class Database:
         rows = self.fetch_all(sql, params)
         return [row["name"] for row in rows]
 
+    def get_user_dingid(self, name):
+            """获取外包方用户登录名列表，用于下拉菜单自动补全。"""
+            sql = "SELECT dingtalk_id FROM ftpuser"
+            params: tuple = ()
+            if name:
+                sql += " WHERE name ILIKE %s"
+                params = (f"%{name}%",)
+            sql += " ORDER BY name;"
+            ret = self.fetch_one(sql, params)
+            if ret:
+                return ret['dingtalk_id']
+
     def get_user_by_name(self, name: str) -> Optional[dict[str, Any]]:
         sql = "SELECT * FROM ftpuser WHERE name = %s;"
         return self.fetch_one(sql, (name,))

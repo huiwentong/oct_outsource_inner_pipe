@@ -649,8 +649,10 @@ class FTPUserManager:
         if db:
             cls.db.add_user2group(username, groupnames)
 
+        user_groups = cls.db.get_user_groups(username)
+        g_names = [g['group_name'] for g in user_groups]
         subprocess.run(
-            ["usermod", "-G", ','.join(groupnames), username],
+            ["usermod", "-G", ','.join(g_names), username],
             check=True
         )
 

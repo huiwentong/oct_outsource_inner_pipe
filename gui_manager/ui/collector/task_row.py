@@ -39,12 +39,14 @@ class TaskRow:
         entity: str,
         entity_type: str,
         component: StepComponent,
+        step: str,
         parent: QWidget | None = None,
     ):
         self.project = project
         self.entity = entity
         self.entity_type = entity_type
         self.component = component
+        self.step=step
 
         self._widgets: dict[str, QWidget] = {}
 

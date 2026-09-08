@@ -165,7 +165,7 @@ def refresh_file_acs():
         if len(parts) in (1, 2):
             group = parts[0]
             if not FTPUserManager.group_exists(group):
-                FTPUserManager.create_group(group, 'auto create')
+                FTPUserManager.create_group(group, 'docker init auto create')
             
             if not acl_has_group(path, group):
                 subprocess.run(
@@ -181,7 +181,7 @@ def refresh_file_acs():
         elif len(parts) == 3:
             entity = parts[2]
             if not FTPUserManager.group_exists(entity):
-                FTPUserManager.create_group(entity, 'auto create')
+                FTPUserManager.create_group(entity, 'docker init auto create')
 
             if not acl_has_group(path, entity):
                 subprocess.run(

@@ -3,6 +3,43 @@ from datetime import datetime
 import json
 
 
+def send_pack_collection_message(msg, user):
+    uid = user
+    url = 'http://192.168.20.217:8080/ding/msg/simple'
+
+    mk_message = """
+# 🚀 十月文化给您更新了资产/环节物料！
+___
+物料已发送成功，请进入ftp客户端进行查看！
+***
+| 信息 | 内容 |
+| :--- | :---: | 
+| 备注信息 | {description} | 
+| 发包资产 | {rely_assets} | 
+| 发包环节 | {rely_steps} | 
+| 发包人员 | {user} | 
+***
+`发送时间： {datetime_now}`
+""".format(
+            description=msg['description'],
+            rely_assets=msg['rely_assets'],
+            rely_steps=msg['rely_steps'],
+            user=msg['user'],
+            datetime_now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    post_data = {
+        'title': '来自十月的发包通知' ,
+        'text': mk_message
+    }
+
+    ret = requests.post(
+        url=url,
+        params={'user_id': uid},
+        data=json.dumps(post_data)
+    )
+
+    ret.raise_for_status()
+    return ret.json()
 
 
 def send_simple_message(msg, title, user):
