@@ -20,7 +20,7 @@ class FtpClient:
     用法::
 
         with FtpClient() as ftp:
-            upload_dir(ftp, Path(r"D:/project/asset"), "/oct/mk2/asset")
+            ftp.upload_dir(Path(r"D:/project/asset"), "/oct/mk2/asset")
 
     后续需要更多操作（下载、删除、重命名等）时直接扩展此类即可。
     """
@@ -44,9 +44,9 @@ class FtpClient:
         ftp.login(self.user, self.password)
         return ftp
 
-    def __enter__(self) -> FTP:
+    def __enter__(self):
         self._ftp = self.connect()
-        return self._ftp
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         try:
@@ -65,13 +65,13 @@ class FtpClient:
             except error_perm:
                 pass  # 目录已存在
 
-    def upload_file(self, ftp: FTP, local_path: Path, remote_path: str) -> None:
+    def upload_file(self, local_path: Path, remote_path: str) -> None:
         with Path(local_path).open("rb") as fh:
-            ftp.storbinary(f"STOR {remote_path}", fh)
+            self._ftp.storbinary(f"STOR {remote_path}", fh)
 
-    def upload_dir(self, ftp: FTP, local_dir: Path, remote_dir: str) -> None:
+    def upload_dir(self, local_dir: Path, remote_dir: str) -> None:
         """递归上传本地目录到远程目录。"""
-        self.ensure_remote_dir(ftp, remote_dir)
+        self.ensure_remote_dir(self._ftp, remote_dir)
         local_dir = Path(local_dir)
 
         for path in local_dir.iterdir():
@@ -79,10 +79,10 @@ class FtpClient:
 
             if path.is_file():
                 print(f"上传: {path} -> {remote_path}")
-                self.upload_file(ftp, path, remote_path)
+                self.upload_file(path, remote_path)
 
             elif path.is_dir():
-                self.upload_dir(ftp, path, remote_path)
+                self.upload_dir(path, remote_path)
 
 
 if __name__ == "__main__":

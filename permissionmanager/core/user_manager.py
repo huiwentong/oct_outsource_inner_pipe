@@ -267,6 +267,24 @@ CREATE TRIGGER permission_group_updated_at
 BEFORE UPDATE ON permission_group
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE IF NOT EXISTS collection_history (
+    id BIGSERIAL PRIMARY KEY,
+
+    username VARCHAR(100) NOT NULL,
+    vendorname VARCHAR(100) NOT NULL,
+    asset TEXT NOT NULL,
+    asset_type VARCHAR(100) NOT NULL,
+    step VARCHAR(100) NOT NULL,
+
+    description TEXT,
+
+    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    transformer_files TEXT[] NOT NULL DEFAULT '{}',
+    rely_groups TEXT[] NOT NULL DEFAULT '{}'
+);
+
         """
         with self.get_connection() as conn:
             with conn.cursor() as cursor:

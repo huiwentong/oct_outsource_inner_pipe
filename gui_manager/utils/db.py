@@ -55,8 +55,10 @@ class Database:
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(sql, params)
+            conn.commit()
 
     # ---------- 外包方用户相关常用查询 ----------
+
 
     def get_all_user(self):
         """获取 ftpuser 表中的全部外包方用户。"""
@@ -76,3 +78,52 @@ class Database:
     def get_user_by_name(self, name: str) -> Optional[dict[str, Any]]:
         sql = "SELECT * FROM ftpuser WHERE name = %s;"
         return self.fetch_one(sql, (name,))
+
+
+    def add_collection_history(self, 
+            username, 
+            vendorname, 
+            asset, 
+            assettype, 
+            step, 
+            description, 
+            transformer_files, 
+            rely_groups
+        ):
+
+        sql = """
+        INSERT INTO collection_history (
+            username,
+            vendorname,
+            asset,
+            asset_type,
+            step,
+            description,
+            transformer_files,
+            rely_groups
+        )
+        VALUES (
+            %s,
+            %s,
+            %s,
+            %s,
+            %s,
+            %s,
+            %s,
+            %s
+        );
+        """
+
+        self.execute(
+            sql,
+            (
+                username,
+                vendorname,
+                asset,
+                assettype,
+                step,
+                description,
+                transformer_files,
+                rely_groups,
+            )
+        )

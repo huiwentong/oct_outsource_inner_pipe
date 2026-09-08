@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional
-
+import getpass
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -32,6 +32,7 @@ from ui.collector.mock_data import (
     get_vendor_names_mock,
     project_name,
 )
+from utils.db import Database
 from ui.collector.task_row import TaskRow
 from ui.widgets import PopupStyledComboBox
 from ui.window_utils import keep_window_on_screen
@@ -52,9 +53,12 @@ class CollectorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.project_id: Optional[str] = None
+        self.project_name: Optional[str] = None
+        self.entity_type: Optional[str] = None  
         self._step_boxes: dict[str, QCheckBox] = {}
         self._rows: list[TaskRow] = []
         self._rows_maximized = False
+        self.db = Database()
         self._placed_once = False
 
         self.setWindowTitle("Collector · 制片资产抓包工具")
@@ -92,9 +96,9 @@ class CollectorWindow(QMainWindow):
         empty_page = QWidget()
         empty_layout = QVBoxLayout(empty_page)
         empty_layout.addStretch(1)
-        empty_hint = QLabel("请先在上方选择抓包项目（MK2 / MKO）")
+        empty_hint = QLabel(f"请先在上方选择抓包项目({', '.join([proj['name'] for proj in PROJECTS])})")
         empty_hint.setObjectName("emptyState")
-        empty_hint.setAlignment(Qt.AlignCenter)
+        empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(empty_hint)
         empty_layout.addStretch(1)
 
@@ -140,8 +144,8 @@ class CollectorWindow(QMainWindow):
             btn = QPushButton(proj["name"])
             btn.setObjectName("projectToggle")
             btn.setCheckable(True)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.clicked.connect(lambda _=False, p=pid: self._on_project_chosen(p))
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(lambda _=False, p=pid, name=proj["code"]: self._on_project_chosen(p, name))
             group.addButton(btn)
             self._project_buttons[pid] = btn
             layout.addWidget(btn)
@@ -189,11 +193,11 @@ class CollectorWindow(QMainWindow):
         filter_label = _hint_label("实体 / 资产")
         sel_all = QPushButton("全选")
         sel_all.setObjectName("ghost")
-        sel_all.setCursor(Qt.PointingHandCursor)
+        sel_all.setCursor(Qt.CursorShape.PointingHandCursor)
         sel_all.clicked.connect(lambda: self._set_all_entities(True))
         clear_all = QPushButton("清空")
         clear_all.setObjectName("ghost")
-        clear_all.setCursor(Qt.PointingHandCursor)
+        clear_all.setCursor(Qt.CursorShape.PointingHandCursor)
         clear_all.clicked.connect(lambda: self._set_all_entities(False))
         entity_head.addWidget(filter_label)
         entity_head.addStretch(1)
@@ -249,11 +253,11 @@ class CollectorWindow(QMainWindow):
         step_quick = QHBoxLayout()
         step_on = QPushButton("全选环节")
         step_on.setObjectName("ghost")
-        step_on.setCursor(Qt.PointingHandCursor)
+        step_on.setCursor(Qt.CursorShape.PointingHandCursor)
         step_on.clicked.connect(lambda: self._set_all_steps(True))
         step_off = QPushButton("清空环节")
         step_off.setObjectName("ghost")
-        step_off.setCursor(Qt.PointingHandCursor)
+        step_off.setCursor(Qt.CursorShape.PointingHandCursor)
         step_off.clicked.connect(lambda: self._set_all_steps(False))
         step_quick.addWidget(step_on)
         step_quick.addWidget(step_off)
@@ -289,8 +293,8 @@ class CollectorWindow(QMainWindow):
         self.vendor_combo.setPlaceholderText("选择或输入外包方名称…")
         self.vendor_combo.setMinimumWidth(360)
         completer = QCompleter(self.vendor_combo.model(), self)
-        completer.setFilterMode(Qt.MatchContains)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.vendor_combo.setCompleter(completer)
         self.vendor_combo.lineEdit().textChanged.connect(self._update_state)
 
@@ -313,12 +317,12 @@ class CollectorWindow(QMainWindow):
         header.addWidget(t)
         header.addStretch(1)
         self.rows_count_label = _hint_label("0 项")
-        self.rows_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.rows_count_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         header.addWidget(self.rows_count_label)
 
         self.rows_max_btn = QPushButton("展开大视图")
         self.rows_max_btn.setObjectName("ghost")
-        self.rows_max_btn.setCursor(Qt.PointingHandCursor)
+        self.rows_max_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.rows_max_btn.setCheckable(True)
         self.rows_max_btn.setToolTip("展开后，补充资料区域将占满整个面板")
         self.rows_max_btn.toggled.connect(self._on_rows_max_toggled)
@@ -348,8 +352,9 @@ class CollectorWindow(QMainWindow):
 
     # ---------- 数据与交互 ----------
 
-    def _on_project_chosen(self, project_id: str) -> None:
+    def _on_project_chosen(self, project_id: str, project_name: str) -> None:
         self.project_id = project_id
+        self.project_name = project_name
         self._load_entities()
         self._set_all_steps(False)
         self._stack.setCurrentIndex(1)
@@ -358,10 +363,11 @@ class CollectorWindow(QMainWindow):
     def _load_entities(self) -> None:
         self._set_all_entities(False, emit=False)
         self.entity_list.clear()
-        for name in get_project_entities_mock(self.project_id or ""):
+        for [name, type] in get_project_entities_mock(self.project_id or ""):
             item = QListWidgetItem(name)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
+            item.setData(Qt.ItemDataRole.UserRole, type)
             self.entity_list.addItem(item)
         self._refresh_region3()
 
@@ -370,7 +376,7 @@ class CollectorWindow(QMainWindow):
         for i in range(self.entity_list.count()):
             item = self.entity_list.item(i)
             if not self.entity_list.isRowHidden(i):
-                item.setCheckState(Qt.Checked if checked else Qt.Unchecked)
+                item.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
         self.entity_list.blockSignals(False)
         if emit:
             self._refresh_region3()
@@ -399,8 +405,8 @@ class CollectorWindow(QMainWindow):
         checked = []
         for i in range(self.entity_list.count()):
             item = self.entity_list.item(i)
-            if not self.entity_list.isRowHidden(i) and item.checkState() == Qt.Checked:
-                checked.append(item.text())
+            if not self.entity_list.isRowHidden(i) and item.checkState() == Qt.CheckState.Checked:
+                checked.append([item.text(), item.data(Qt.ItemDataRole.UserRole)])
         return checked
 
     def _checked_steps(self) -> list[str]:
@@ -414,7 +420,7 @@ class CollectorWindow(QMainWindow):
 
         while self.rows_layout.count() > 1:  # 最后一个是 stretch
             item = self.rows_layout.takeAt(0)
-            if item.widget():
+            if item and item.widget():
                 item.widget().deleteLater()
 
     def _show_rows_hint(self, message: str) -> None:
@@ -422,7 +428,7 @@ class CollectorWindow(QMainWindow):
         label = QLabel(message)
         label.setObjectName("emptyState")
         label.setWordWrap(True)
-        label.setAlignment(Qt.AlignCenter)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.rows_layout.insertWidget(0, label)
 
     def _on_rows_max_toggled(self, checked: bool) -> None:
@@ -452,13 +458,17 @@ class CollectorWindow(QMainWindow):
             self._show_rows_hint(f"还没有选择环节：{STEPS_HINT}")
             self._update_state()
             return
-
-        for entity in entities:
+        if not self.project_name:
+            raise RuntimeError('no project name!')
+        for entity, _type in entities:
             for step in steps:
-                component: StepComponent = get_component(step)
-                row = TaskRow(self.project_id or "", entity, component)
+                component: StepComponent = get_component(step)(self.project_name, entity, _type)
+                row = TaskRow(self.project_name or "", entity, _type, component)
                 self._rows.append(row)
-                self.rows_layout.addWidget(row.frame)
+                self.rows_layout.insertWidget(
+                    self.rows_layout.count() - 1,
+                    row.frame
+                )
 
         self._update_state()
 
@@ -486,6 +496,7 @@ class CollectorWindow(QMainWindow):
             )
             self.rows_count_label.setText(f"{len(self._rows)} 项")
         else:
+            if not self.project_id: raise RuntimeError('cant find project id')
             self.summary_label.setText(
                 f"{project_name(self.project_id)} · {vendor} · "
                 f"{len(entities)} 个实体 × {len(steps)} 个环节，共 {len(self._rows)} 项抓包任务"
@@ -504,14 +515,21 @@ class CollectorWindow(QMainWindow):
         print(f"[开始抓包] 项目: {project_name_zh} | 外包方: {vendor}")
         print(f"[开始抓包] 共 {len(self._rows)} 项任务:")
         for row in self._rows:
-            payload = row.make_payload(self.project_id or "", vendor)
-            # 调用对应环节组件的能力（当前是 mock 打印）
-            row.component.collect(payload)
+            row.component.start_collcotion(vendor)
+            self.db.add_collection_history(
+                username=getpass.getuser(),
+                vendorname=vendor,
+                asset=row.component.entity,
+                assettype=row.component.entity_type,
+                step=row.component.step,
+                description=row.component.description,
+                transformer_files=row.component.transfer_folders,
+                rely_groups=row.component.rely_assets+row.component.rely_steps
+            )
         print("=" * 66)
 
         QMessageBox.information(
             self,
-            "开始抓包",
-            f"已模拟执行 {len(self._rows)} 项抓包任务。\n"
-            "详细输出请查看终端。\n（真实抓包与上传逻辑待后续补充）",
+            "抓包完成",
+            f"已执行 {len(self._rows)} 项抓包任务。\n"
         )

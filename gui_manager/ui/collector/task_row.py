@@ -13,36 +13,13 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QVBoxLayout,
     QWidget,
+    QPushButton,
+    QMessageBox
 )
 
-from components.core import FieldSpec, StepComponent
+from components.core import FieldSpec, StepComponent, inspect_component
 from ui.widgets import PopupStyledComboBox
 
-
-def _control_from_spec(spec: FieldSpec, default: Any) -> QWidget:
-    """根据字段定义生成输入控件，并把默认值填进去。"""
-    if spec.kind == "combo":
-        combo = PopupStyledComboBox()
-        combo.addItems(spec.options or [])
-        text = str(default) if default not in (None, "") else ""
-        if text:
-            idx = combo.findText(text)
-            if idx >= 0:
-                combo.setCurrentIndex(idx)
-            else:
-                combo.insertItem(0, text)
-                combo.setCurrentIndex(0)
-        return combo
-
-    if spec.kind == "check":
-        checkbox = QCheckBox(spec.label)
-        checkbox.setChecked(bool(default))
-        return checkbox
-
-    line = QLineEdit()
-    line.setText(str(default) if default is not None else "")
-    line.setPlaceholderText(spec.placeholder or "")
-    return line
 
 
 def _read_widget(widget: QWidget, spec: FieldSpec) -> Any:
@@ -60,14 +37,15 @@ class TaskRow:
         self,
         project: str,
         entity: str,
+        entity_type: str,
         component: StepComponent,
         parent: QWidget | None = None,
     ):
         self.project = project
         self.entity = entity
+        self.entity_type = entity_type
         self.component = component
 
-        self._specs = component.fields
         self._widgets: dict[str, QWidget] = {}
 
         self.frame = QFrame(parent)
@@ -85,56 +63,53 @@ class TaskRow:
         entity_label.setObjectName("rowEntity")
 
         badge = QLabel(component.name)
-        badge.setAlignment(Qt.AlignCenter)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         badge.setStyleSheet(
             f"background:{component.color}; color:white;"
             "border-radius:9px; padding:2px 10px; font-size:12px;"
         )
+        
 
-        path_label = QLabel(f"上传至 {component.default_ftp_path(project, entity)}")
+        path_label = QLabel(f"上传至 {component.ftp_tar}")
         path_label.setObjectName("rowPath")
+
+        check_button = QPushButton('点击检查')
+        check_button.clicked.connect(lambda: QMessageBox.information(parent, 'component信息', inspect_component(component)))
 
         top.addWidget(entity_label)
         top.addWidget(badge)
         top.addSpacing(4)
         top.addWidget(path_label, 1)
+        top.addWidget(check_button)
         outer.addLayout(top)
 
         # 第二行：环节对应的补充资料控件
         bottom = QHBoxLayout()
         bottom.setSpacing(8)
-
-        defaults = component.mock_defaults(entity, project)
-        for spec in self._specs:
-            value = defaults.get(spec.key, spec.default)
-            widget = _control_from_spec(spec, value)
-            self._widgets[spec.key] = widget
-
-            if spec.kind == "check":
-                bottom.addWidget(widget)
-            else:
-                label = QLabel(spec.label)
-                if spec.help:
-                    label.setToolTip(spec.help)
-                bottom.addWidget(label)
-                bottom.addWidget(widget, 1)
-            if spec.help:
-                widget.setToolTip(spec.help)
+        b_bottom = QHBoxLayout()
+        b_bottom.setSpacing(8)
+        if not component.auto_build_frame:
+            raise RuntimeError('can not build auto frame!')
+        bottom.addWidget(component.auto_build_frame)
+        if component.custom_frame:
+            b_bottom.addWidget(component.custom_frame)
+            
 
         outer.addLayout(bottom)
+        outer.addLayout(b_bottom)
 
-    def read_values(self) -> dict[str, Any]:
-        """读取本行补充资料控件的值。"""
-        return {spec.key: _read_widget(self._widgets[spec.key], spec) for spec in self._specs}
+    # def read_values(self) -> dict[str, Any]:
+    #     """读取本行补充资料控件的值。"""
+    #     return {spec.key: _read_widget(self._widgets[spec.key], spec) for spec in self._specs}
 
-    def make_payload(self, project: str, vendor: str) -> dict[str, Any]:
-        """组装一条开始抓包时需要的完整数据。"""
-        return {
-            "project": project,
-            "vendor": vendor,
-            "entity": self.entity,
-            "step": self.component.step,
-            "step_name": self.component.name,
-            "ftp_path": self.component.default_ftp_path(project, self.entity),
-            "data": self.read_values(),
-        }
+    # def make_payload(self, project: str, vendor: str) -> dict[str, Any]:
+    #     """组装一条开始抓包时需要的完整数据。"""
+    #     return {
+    #         "project": project,
+    #         "vendor": vendor,
+    #         "entity": self.entity,
+    #         "step": self.component.step,
+    #         "step_name": self.component.name,
+    #         "ftp_path": self.component.default_ftp_path(project, self.entity, self.entity_type),
+    #         "data": self.read_values(),
+        # }

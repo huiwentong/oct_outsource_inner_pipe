@@ -11,3 +11,7 @@ ftp_user: oip_admin
 ftp_pass: 123456
 
 permissionmanager_port: 8000
+
+sg_server_url: 'http://sg.ds.com/'
+sg_script_name: 'Generic'
+sg_api_key: 'kalyywr~ayDzxsum3bshirqea'

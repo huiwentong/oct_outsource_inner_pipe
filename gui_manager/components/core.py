@@ -2,11 +2,26 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
-from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field, fields
 from typing import Any, Optional, Type, Union
-
+from PySide6 import QtCore, QtWidgets
 import components  # noqa: F401  仅为 auto-discover 提供包路径
+from typing import ClassVar
+from utils.permissionmanager import add_group2vendor
+from pathlib import Path
+from utils.ftp import FtpClient
 
+
+def inspect_component(component):
+    inspect_string = ''
+    for _f in fields(component):
+        k = _f.name
+        v = getattr(component, k)
+        if isinstance(v, QtWidgets.QFrame):
+            continue
+        inspect_string += f'{k}: {str(v)}\n'
+    return inspect_string
 
 @dataclass
 class FieldSpec:
@@ -21,6 +36,8 @@ class FieldSpec:
     help: str = ""
 
 
+
+@dataclass
 class StepComponent:
     """collector 针对“单个制作环节”的能力模块基类。
 
@@ -28,45 +45,126 @@ class StepComponent:
     ``collect`` / ``mock_defaults`` 即可，UI 不需要改动。
     """
 
-    step: str = ""                 # 环节英文标识，例如 "mod"
-    name: str = ""                 # 环节中文名
-    color: str = "#64748b"         # 环节徽章颜色
-    order: int = 99                # 界面排列顺序
-    fields: list[FieldSpec] = field(default_factory=list)
+    project:str
+    entity:str
+    entity_type:str
+    transfer_folders: dict = field(default_factory=dict)
+    rely_steps: list[str] = field(default_factory=list)
+    rely_assets: list[str] = field(default_factory=list)
+    auto_build_frame: QtWidgets.QFrame | None = None
+    custom_frame: QtWidgets.QFrame | None = None
+    ftp_tar: str = ''
+    
 
-    def default_ftp_path(self, project: str, entity: str) -> str:
+
+    def __post_init__(self):
+        self.default_ftp_path()
+        self.auto_build()
+        self.extra_ui()
+        self.analysis_relies()
+        self.analysis_transfer_folders()
+        
+
+
+    def default_ftp_path(self):
         """数据默认上传到 ftp 的路径。"""
-        return f"/oct/{project}/{entity}/{self.step}"
+        self.ftp_tar = f"/oct/{self.project}/{self.entity_type}/{self.entity}/{self.step}/requirements"
 
-    def mock_defaults(self, entity: str, project: str) -> dict[str, Any]:
-        """mock 数据：按实体自动加载该环节补充资料的默认值。
+    def auto_build(self):
+        self.auto_build_frame = QtWidgets.QFrame()
+        
 
-        TODO(后续补充): 这里替换为真实的数据库 / 工程文件查询逻辑。
+        h_lay = QtWidgets.QHBoxLayout(self.auto_build_frame)
+        h_lay.setSpacing(8)
+
+        extra_label = QtWidgets.QLabel('选择需要额外指定的文件')
+        extra_file_picker = QtWidgets.QPushButton('点击选择文件')
+        extra_file_line = QtWidgets.QLineEdit()
+        extra_file_line.setEnabled(False)
+
+        des_label = QtWidgets.QLabel('备注')
+        des_eline = QtWidgets.QLineEdit()
+        des_eline.setText(self.description)
+        des_eline.textChanged.connect(lambda text: setattr(self, 'description', text))
+
+        
+
+        extra_file_picker.clicked.connect(lambda: self.pick_button(extra_file_line))
+
+
+        h_lay.addWidget(extra_label)
+        h_lay.addWidget(extra_file_picker)
+        h_lay.addWidget(extra_file_line)
+        h_lay.addWidget(des_label)
+        h_lay.addWidget(des_eline)
+
+
+    def pick_button(self, editline:QtWidgets.QLineEdit):
+        files, _ = QtWidgets.QFileDialog.getOpenFileNames()
+        print(files)
+        editline.setText(' '.join(files))
+        editline.setToolTip('\n'.join(files))
+        for i in files:
+            self.transfer_folders[i] = str(Path(self.ftp_tar) / Path(i).name)
+
+
+    def start_collcotion(self, vendor):
+        self.check_relies_folders()
+        ret = add_group2vendor(vender=vendor, groups=self.rely_assets+self.rely_steps)
+        print(ret)
+        for source, dst in self.transfer_folders.items():
+            with FtpClient() as ftp:
+                ftp.upload_dir(Path(source), dst)
+        
+
+
+    def check_relies_folders(self):
+        """检查依赖环节和依赖资产的传输文件夹是否存在。"""
+        for k,v in self.transfer_folders.items():
+            if not Path(k).exists():
+                raise FileNotFoundError(f"依赖文件夹不存在: {k}")
+        if not self.rely_steps or not self.rely_assets:
+            raise ValueError("没有依赖环节和依赖资产，检查不通过！")
+
+    @abstractmethod
+    def analysis_relies(self):
+        """用于解析所有的依赖环节和依赖资产"""
+        pass
+
+
+    @abstractmethod
+    def analysis_transfer_folders(self):
+        """用于解析所有需要打包的传输的文件和文件夹夹"""
+        pass
+
+
+
+    def extra_ui(self):
+        """返回一个额外的 UI 控件，显示在环节补充资料的下方。
+
+        TODO(后续补充): 这里可以返回一个 QTreeView / QTableView，显示该环节的
+        历史抓包记录，供用户参考。
         """
-        return {}
-
-    def collect(self, payload: dict[str, Any]) -> None:
-        """执行抓包逻辑（当前仅打印，不真正上传）。
-
-        TODO(后续补充): 在这里根据 payload 查询制作文件并上传到 ftp。
-        """
-        print(f"[mock抓包] {payload}")
 
 
 # ---------- 注册表 ----------
 
-_REGISTRY: dict[str, StepComponent] = {}
+_REGISTRY: dict[str, Type[StepComponent]] = {}
 _DISCOVERED = False
 
+def register(step):
+    def func(
+        component: Type[StepComponent]
+    ) -> Type[StepComponent]:
+        """注册环节组件；支持直接传类（以 @register 装饰）或实例。"""
+        if not isinstance(component, type):
+            raise TypeError(
+                f"{cls} must inherit StepComponent"
+            )
+        _REGISTRY[step] = component
+        return component
 
-def register(
-    component: Union[Type[StepComponent], StepComponent],
-) -> StepComponent:
-    """注册环节组件；支持直接传类（以 @register 装饰）或实例。"""
-    if isinstance(component, type):
-        component = component()
-    _REGISTRY[component.step] = component
-    return component
+    return func
 
 
 def _discover() -> None:
@@ -82,7 +180,7 @@ def _discover() -> None:
     _DISCOVERED = True
 
 
-def get_component(step: str) -> StepComponent:
+def get_component(step: str) -> type[StepComponent]:
     _discover()
     try:
         return _REGISTRY[step]
@@ -90,7 +188,7 @@ def get_component(step: str) -> StepComponent:
         raise KeyError(f"没有注册制作环节组件: {step!r}") from None
 
 
-def all_components() -> list[StepComponent]:
+def all_components() -> list[type[StepComponent]]:
     _discover()
     return list(_REGISTRY.values())
 
