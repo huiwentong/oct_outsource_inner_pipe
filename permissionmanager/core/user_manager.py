@@ -650,6 +650,7 @@ class FTPUserManager:
             cls.db.add_user2group(username, groupnames)
 
         user_groups = cls.db.get_user_groups(username)
+        logger.info(f'用户 {username} 的权限组更新为: {user_groups}')
         g_names = [g['group_name'] for g in user_groups]
         subprocess.run(
             ["usermod", "-G", ','.join(g_names), username],

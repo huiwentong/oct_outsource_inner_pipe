@@ -584,7 +584,7 @@ class CollectorWindow(QMainWindow):
                 'rely_steps': ', '.join(list(steps)),
                 'user': getpass.getuser(),
             }
-
+            print(f'准备发送抓包完成消息给钉钉: {msg} {vendor_dingtalk}')
             ret = send_pack_collection_message(msg, vendor_dingtalk)
             print(ret)
         else:
