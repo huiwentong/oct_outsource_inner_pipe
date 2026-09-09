@@ -38,7 +38,7 @@ from ui.collector.worker import CollectWorker
 from ui.widgets import PopupStyledComboBox
 from utils.message import send_pack_collection_message
 import getpass
-from ui.window_utils import keep_window_on_screen
+from ui.window_utils import keep_window_on_screen, load_app_icon
 
 STEPS_HINT = "每个资产/实体至少选择一个环节，数据才会进入下方补充资料区"
 
@@ -71,6 +71,7 @@ class CollectorWindow(QMainWindow):
         self.setWindowTitle("Collector · 制片资产抓包工具")
         self.resize(1160, 820)
         self.setMinimumSize(980, 700)
+        self.setWindowIcon(load_app_icon("collector"))
 
         self._build_ui()
         self._update_state()

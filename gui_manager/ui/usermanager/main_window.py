@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from ui.usermanager import services
-from ui.window_utils import keep_window_on_screen
+from ui.window_utils import keep_window_on_screen, load_app_icon
 
 # (字段key, 显示名, 是否必填, 输入提示, 详细说明)
 FIELD_SPECS: list[tuple[str, str, bool, str, str]] = [
@@ -77,6 +77,7 @@ class UserManagerWindow(QMainWindow):
         self.setWindowTitle("UserManager · 外包方用户管理")
         self.resize(880, 880)
         self.setMinimumSize(720, 600)
+        self.setWindowIcon(load_app_icon("manager"))
 
         self._build_ui()
         self._refresh_state()

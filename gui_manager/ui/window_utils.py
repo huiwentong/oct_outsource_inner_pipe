@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from PySide6.QtCore import QPoint, QRect
-from PySide6.QtGui import QGuiApplication, QScreen
+from PySide6.QtGui import QGuiApplication, QIcon, QScreen
 from PySide6.QtWidgets import QWidget
 
 _MARGIN = 24  # 窗口与屏幕边缘保留的间距
+_RESOURCE_DIR = Path(__file__).resolve().parents[1] / "resource"
+
+
+def load_app_icon(name: str) -> QIcon:
+    """加载 resource 目录下对应工具的应用图标。"""
+    return QIcon(str(_RESOURCE_DIR / f"{name}.png"))
 
 
 def _best_screen(widget: QWidget) -> QScreen:
