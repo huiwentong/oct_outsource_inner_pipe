@@ -65,7 +65,7 @@ services:
   behavior:
     build:
       context: .
-      dockerfile: docker/behavior.Dockerfile
+      dockerfile: docker/behaviour.Dockerfile
     environment:
       # BEHAVIOR_DATABASE_URL: postgresql://versionwatch:versionwatch@postgres:5432/versionwatch
       BEHAVIOR_LOG_LEVEL: INFO
