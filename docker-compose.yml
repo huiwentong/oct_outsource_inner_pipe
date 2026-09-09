@@ -59,6 +59,23 @@ services:
       - ftplogs:/var/log/vsftpd
       - outsourcelogs:/var/log/outsource
     restart: unless-stopped
+  
+  behavior:
+    build:
+      context: .
+      dockerfile: docker/behavior.Dockerfile
+    environment:
+      # BEHAVIOR_DATABASE_URL: postgresql://versionwatch:versionwatch@postgres:5432/versionwatch
+      BEHAVIOR_LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ftpdata:/srv/ftp
+      - outsourcelogs:/var/log/outsource
+      - /mnt/I:/srv/i
+      - /mnt/W:/srv/w
+    restart: unless-stopped
 
 volumes:
   pgdata:

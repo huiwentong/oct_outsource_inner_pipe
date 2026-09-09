@@ -21,4 +21,4 @@ class TexComponent(StepComponent):
     
 
     def extra_ui(self):
-        self.frame = QtWidgets.QFrame()
+        self.custom_frame = QtWidgets.QFrame()

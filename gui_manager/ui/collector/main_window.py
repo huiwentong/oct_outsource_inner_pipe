@@ -574,7 +574,7 @@ class CollectorWindow(QMainWindow):
             assets = ''
             steps = set()
             for row in self._rows:
-                description += f'{row.project}|{row.entity}|{row.step}备注： {row.component.description}\n'
+                description += f'{row.project}/{row.entity}/{row.step}备注： {row.component.description}\n'
                 assets += f'{row.entity}, '
                 steps.add(row.step)
 
