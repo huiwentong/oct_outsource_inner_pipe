@@ -39,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      behavior:
+        condition: service_healthy
     restart: unless-stopped
 
   # 演示用 FTP 服务；生产环境通常由宿主机已有 vsftpd 提供，
@@ -75,6 +77,12 @@ services:
       - outsourcelogs:/var/log/outsource
       - /mnt/I:/srv/i
       - /mnt/W:/srv/w
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
