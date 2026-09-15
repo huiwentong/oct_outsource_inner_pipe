@@ -20,7 +20,7 @@ class Event():
 
 
 def find_dst_path_and_version(data):
-    path = Path(f'/mnt/W/projects/{data["project"]}/outsourcing/{data["type"]}/{data["entity_name"]}/{data["task_step"]}')
+    path = Path(f'/srv/w/projects/{data["project"]}/outsourcing/{data["type"]}/{data["entity_name"]}/{data["task_step"]}')
     max_version = 0
 
     if path.exists():
@@ -36,7 +36,7 @@ def find_dst_path_and_version(data):
 
 
 def make_event(manifest_path, vendor) -> Event:
-    with Path('/srv/ftp/' + manifest_path).open('r') as f:
+    with Path(manifest_path).open('r') as f:
         data = json.load(f)
         p,v = find_dst_path_and_version(data)
         return Event(
@@ -44,7 +44,7 @@ def make_event(manifest_path, vendor) -> Event:
             manifest_file=manifest_path,
             asset=data['entity_name'],
             step=data['task_step'],
-            checksum=str(hash_file('/srv/ftp/' + manifest_path)),
+            checksum=str(hash_file(manifest_path)),
             version=v,
             dst_path=str(p)
         )

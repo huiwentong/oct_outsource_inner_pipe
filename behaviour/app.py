@@ -39,6 +39,9 @@ def health_check():
 @app.get("/observe_manifest")
 def observe(manifest_path: str, vendor:str):
     try:
+        manifest_path = '/srv/ftp/' + manifest_path
+        
+
         event = make_event(manifest_path=manifest_path, vendor=vendor)
 
     except ValueError as e:

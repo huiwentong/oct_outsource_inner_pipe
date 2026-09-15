@@ -37,7 +37,7 @@ class StepComponent(ABC):
 
 
     def check_manifest_file(self):
-        with Path(self.event.manifest_file).open('r') as f:
+        with Path('/srv/frp/' + self.event.manifest_file).open('r') as f:
             data:dict = json.load(f)
 
         wrong_message = ''
@@ -99,7 +99,7 @@ class StepComponent(ABC):
 
     def copy_to_w(self):
         dst_folder = Path(self.event.dst_path) / self.event.version
-        source_folder = Path('/srv/ftp/' + self.event.manifest_file).parent
+        source_folder = Path(self.event.manifest_file).parent
         if not source_folder.exists():
             raise FileNotFoundError(f"源路径不存在: {source_folder}")
 
