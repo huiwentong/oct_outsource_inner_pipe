@@ -50,7 +50,7 @@ class Pipeline():
                 if ev is not None:
                     self.logger.info(
                         "behaviour pipeline 捕获到事件 %s，队列剩余 %d",
-                        ev.summary(),
+                        ev.manifest_file,
                         self.queue.qsize(),
                     )
                     await self._process_event(ev)
