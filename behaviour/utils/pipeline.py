@@ -106,8 +106,7 @@ class Pipeline():
     async def _flush_all(self):
         if not self.state_file.exists():
             self.state_file.touch()
-        with self.state_file.open('r') as f:
-            event_list = json.load(f)
+        event_list = self._safe_load_state()
         event_list = event_list or []
         while True:
             try:

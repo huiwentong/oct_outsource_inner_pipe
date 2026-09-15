@@ -493,7 +493,7 @@ class FTPUserManager:
     def create_user(cls, username, password, home, ding, email, description, db=True,uid:str=''):
         if FTPUserManager.user_exists(username):
             if home:
-                logger.info(f'{username}创建用户目录{home}且赋予权限！')
+                logger.info(f'已有用户，{username}创建用户目录{home}且赋予权限！')
                 if not os.path.exists(home):
                     subprocess.run(
                         ["mkdir", "-p", home],
@@ -501,7 +501,7 @@ class FTPUserManager:
                     )
                 
                 subprocess.run(
-                    ["chown", f"{username}:oip_admin", home],
+                    ["chown", "-R", f"{username}:oip_admin", home],
                     check=True,
                 )
                 logger.info(f'check!******************** {username}创建用户目录{home}且赋予权限！*******************')
@@ -510,11 +510,11 @@ class FTPUserManager:
                     check=True,
                 )
                 subprocess.run(
-                    ["setfacl", "-m", f"g:oip_admin:rx", home],
+                    ["setfacl", "-m", "-R", f"g:oip_admin:rx", home],
                     check=True,
                 )
                 subprocess.run(
-                    ["setfacl", "-d", "-m", f"g:oip_admin:rx", home],
+                    ["setfacl", "-d", "-R", "-m", f"g:oip_admin:rx", home],
                     check=True,
                 )
             return cls.get_user(username)[0]
@@ -561,7 +561,7 @@ class FTPUserManager:
                 )
             
             subprocess.run(
-                ["chown", f"{username}:oip_admin", home],
+                ["chown", "-R", f"{username}:oip_admin", home],
                 check=True,
             )
             logger.info(f'check!******************** {username}创建用户目录{home}且赋予权限！*******************')
@@ -570,11 +570,11 @@ class FTPUserManager:
                 check=True,
             )
             subprocess.run(
-                ["setfacl", "-m", f"g:oip_admin:rx", home],
+                ["setfacl", "-m", "-R", f"g:oip_admin:rx", home],
                 check=True,
             )
             subprocess.run(
-                ["setfacl", "-d", "-m", f"g:oip_admin:rx", home],
+                ["setfacl", "-d", "-R", "-m", f"g:oip_admin:rx", home],
                 check=True,
             )
 
