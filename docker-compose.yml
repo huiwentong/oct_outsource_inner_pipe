@@ -89,9 +89,11 @@ services:
         "CMD",
         "python",
         "-c",
-        "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"
+        "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
+        "/dev/null",
+        "2>&1"
       ]
-      interval: 5s
+      interval: 10s
       timeout: 3s
       retries: 12
       start_period: 10s

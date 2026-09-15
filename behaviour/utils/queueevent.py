@@ -36,7 +36,7 @@ def find_dst_path_and_version(data):
 
 
 def make_event(manifest_path, vendor) -> Event:
-    with Path(manifest_path).open('r') as f:
+    with Path('/srv/ftp/' + manifest_path).open('r') as f:
         data = json.load(f)
         p,v = find_dst_path_and_version(data)
         return Event(
