@@ -44,7 +44,7 @@ def make_event(manifest_path, vendor) -> Event:
             manifest_file=manifest_path,
             asset=data['entity_name'],
             step=data['task_step'],
-            checksum=str(hash_file(manifest_path)),
+            checksum=str(hash_file('/srv/ftp/' + manifest_path)),
             version=v,
             dst_path=str(p)
         )
