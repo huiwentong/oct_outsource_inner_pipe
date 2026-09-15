@@ -37,7 +37,7 @@ class StepComponent(ABC):
 
 
     def check_manifest_file(self):
-        with Path('/srv/frp/' + self.event.manifest_file).open('r') as f:
+        with Path(self.event.manifest_file).open('r') as f:
             data:dict = json.load(f)
 
         wrong_message = ''
