@@ -25,13 +25,16 @@ class Pipeline():
     async def run(self):
         self.logger.info("behaviour 事件流水线 pipline启动")
         if self.state_file.exists():
-            with self.state_file.open('r') as f:
-                event_list = json.load(f)
+            event_list = self._safe_load_state()
             for event in event_list:
                 self.queue.put_nowait(
                     Event(**event)
                 )
-            self.state_file.unlink()
+            try:
+                self.state_file.unlink(missing_ok=True)
+                self.logger.info("已加载 %d 个历史事件并清理状态文件", len(event_list))
+            except OSError as e:
+                self.logger.error("删除状态文件失败: %s", e)
             
 
         while not self._stop.is_set():
@@ -49,7 +52,40 @@ class Pipeline():
 
         await self._flush_all()
         
+    def _safe_load_state(self) -> list[dict]:
+        """安全加载状态文件，处理空文件和JSON格式错误"""
+        try:
+            size = self.state_file.stat().st_size
+        except OSError:
+            return []
 
+        # ✅ 核心修复：空文件直接返回默认值
+        if size == 0:
+            self.logger.warning("状态文件为空，跳过加载: %s", self.state_file)
+            return []
+
+        try:
+            with self.state_file.open('r', encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            self.logger.error("状态文件JSON解析失败: %s，内容可能已损坏", e)
+            # 备份损坏文件以便事后排查
+            backup = self.state_file.with_suffix('.json.corrupt')
+            try:
+                self.state_file.rename(backup)
+                self.logger.info("已备份损坏的状态文件至: %s", backup)
+            except OSError:
+                pass
+            return []
+        except OSError as e:
+            self.logger.error("读取状态文件失败: %s", e)
+            return []
+
+        if not isinstance(data, list):
+            self.logger.error("状态文件格式错误，期望list但得到 %s", type(data).__name__)
+            return []
+
+        return data
 
     async def _process_event(self, event: Event):
         step = event.step
