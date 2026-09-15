@@ -266,13 +266,6 @@ def refresh_file_acs():
         if not user_exists(username):
             continue
 
-        # -----------------------------------------------------
-        # 1. owner / group
-        #
-        # /srv/ftp/yuanli
-        # owner -> yuanli
-        # group -> oip_admin
-        # -----------------------------------------------------
         subprocess.run(
             [
                 "chown",
@@ -283,76 +276,20 @@ def refresh_file_acs():
             check=True,
         )
 
-        # -----------------------------------------------------
-        # 2. 现有目录：
-        #
-        # owner: rwx
-        # oip_admin: r-x
-        # other: ---
-        # -----------------------------------------------------
-        subprocess.run(
-            [
-                "find",
-                str(user_dir),
-                "-type",
-                "d",
-                "-exec",
-                "chmod",
-                "u+rwx,g-rwx,o-rwx",
-                "{}",
-                "+",
-            ],
-            check=True,
-        )
 
-        subprocess.run(
-            [
-                "find",
-                str(user_dir),
-                "-type",
-                "f",
-                "-exec",
-                "chmod",
-                "u+rw,g-rwx,o-rwx",
-                "{}",
-                "+",
-            ],
-            check=True,
-        )
-
-        # -----------------------------------------------------
-        # 3. 现有目录添加 oip_admin ACL
-        #
-        # 目录需要 x 才能进入
-        # -----------------------------------------------------
         subprocess.run(
             [
                 "setfacl",
                 "-R",
                 "-m",
-                "g:oip_admin:r-x",
+                "g:oip_admin:r-x,o:---",
                 str(user_dir),
             ],
             check=True,
         )
 
-        # -----------------------------------------------------
-        # 4. 给每一个目录设置 default ACL
-        #
-        # 以后用户在这些目录下面创建：
-        #
-        # 文件：
-        #   user      -> rw
-        #   oip_admin -> r
-        #
-        # 目录：
-        #   user      -> rwx
-        #   oip_admin -> r-x
-        #
-        # -----------------------------------------------------
         for root, dirs, files in os.walk(user_dir):
             path = Path(root)
-
             subprocess.run(
                 [
                     "setfacl",
