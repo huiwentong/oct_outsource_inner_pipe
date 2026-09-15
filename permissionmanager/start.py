@@ -141,6 +141,7 @@ def acl_has_group(path: Path, group: str) -> bool:
         for line in result.stdout.splitlines()
     )
 
+
 def refresh_file_acs():
     if not os.path.exists('/srv/ftp/oct'):
         return
