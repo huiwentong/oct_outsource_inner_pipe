@@ -23,34 +23,42 @@ class Pipeline():
         self._stop = asyncio.Event()
 
     async def run(self):
-        self.logger.info("behaviour 事件流水线 pipline启动")
-        if self.state_file.exists():
-            event_list = self._safe_load_state()
-            for event in event_list:
-                self.queue.put_nowait(
-                    Event(**event)
-                )
-            try:
-                self.state_file.unlink(missing_ok=True)
-                self.logger.info("已加载 %d 个历史事件并清理状态文件", len(event_list))
-            except OSError as e:
-                self.logger.error("删除状态文件失败: %s", e)
-            
+        self.logger.info(
+            "behaviour 事件流水线 pipeline启动 queue=%s",
+            id(self.queue),
+        )
 
-        while not self._stop.is_set():
-            try:
-                ev = await asyncio.wait_for(self.queue.get(), timeout=0.5)
-            except asyncio.TimeoutError:
-                ev = None
-            if ev is not None:
-                self.logger.info(
-                    "behaviour pipeline 捕获到事件 %s，队列剩余 %d",
-                    ev.summary(),
-                    self.queue.qsize(),
-                )
-                await self._process_event(ev)
+        try:
+            if self.state_file.exists():
+                event_list = self._safe_load_state()
+                for event in event_list:
+                    self.queue.put_nowait(
+                        Event(**event)
+                    )
+                try:
+                    self.state_file.unlink(missing_ok=True)
+                    self.logger.info("已加载 %d 个历史事件并清理状态文件", len(event_list))
+                except OSError as e:
+                    self.logger.error("删除状态文件失败: %s", e)
+                
 
-        await self._flush_all()
+            while not self._stop.is_set():
+                try:
+                    ev = await asyncio.wait_for(self.queue.get(), timeout=0.5)
+                except asyncio.TimeoutError:
+                    ev = None
+                if ev is not None:
+                    self.logger.info(
+                        "behaviour pipeline 捕获到事件 %s，队列剩余 %d",
+                        ev.summary(),
+                        self.queue.qsize(),
+                    )
+                    await self._process_event(ev)
+
+            await self._flush_all()
+        except Exception:
+            self.logger.exception("pipeline 异常退出")
+            raise
         
     def _safe_load_state(self) -> list[dict]:
         """安全加载状态文件，处理空文件和JSON格式错误"""
@@ -93,6 +101,7 @@ class Pipeline():
             module = importlib.import_module(f'behaviour.dispatch_behav.{step}')
             component = module.Component(event)
             await self.loop.run_in_executor(executor, component.process)
+            self.logger.info(f'事件 {event.manifest_file} 处理完成')
         except Exception:
             self.queue.put_nowait(event)
             self.logger.error(f'导入模块{step}时出现错误')

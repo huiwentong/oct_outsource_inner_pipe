@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     pip = Pipeline(loop, logger=logger, queue=queue)
     task = loop.create_task(pip.run())
-    logger.info('behaviour pipeline 启动！')
+    logger.info(f'behaviour pipeline 启动！{id(queue)}')
     try:
         yield
     finally:
