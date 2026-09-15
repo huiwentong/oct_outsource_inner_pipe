@@ -6,6 +6,15 @@ from behaviour.utils.pipeline import Pipeline
 from behaviour.utils.queueevent import make_event
 from dataclasses import asdict
 
+import logging
+
+
+class HealthFilter(logging.Filter):
+    def filter(self, record):
+        return "/health" not in record.getMessage()
+
+
+logging.getLogger("uvicorn.access").addFilter(HealthFilter())
 
 queue = asyncio.Queue()
 
@@ -40,7 +49,7 @@ def health_check():
 def observe(manifest_path: str, vendor:str):
     try:
         manifest_path = '/srv/ftp/' + manifest_path
-        
+
 
         event = make_event(manifest_path=manifest_path, vendor=vendor)
 
