@@ -67,6 +67,9 @@ class Pipeline:
         self.client = httpx.AsyncClient(
             base_url="http://vsftpd:8000"
         )
+        self.client_behav = httpx.AsyncClient(
+            base_url="http://behavior:8001"
+        )
         self.init_from_queue_json()
 
     def stop(self) -> None:
@@ -90,6 +93,7 @@ class Pipeline:
 
         # 退出前把剩余未处理事件强制保存
         await self.client.aclose()
+        await self.client_behav.aclose()
         await self._flush_all()
 
 
@@ -211,7 +215,30 @@ class Pipeline:
                 logger.error(traceback.format_exc())
 
         else:
-            pass
+            if ev.rel_path.endswith('_manifest.json'):
+                logger.info('检测到外包上传文件，开始向behaviour服务上传请求')
+                try:
+                    vendor = ev.rel_path.split('/')[0]
+                    path = ev.rel_path
+                    query = await self.client_behav.get(
+                        "/observe_manifest",
+                        params={
+                            'manifest_path': path,
+                            'vendor': vendor,
+                            }
+                    )
+                    query.raise_for_status()
+                    ret = query.json()
+                    if ret.get("status") == "queued":
+                        logger.info(f'请求成功 {str(ret.get("event"))}')
+                    else:
+                        logger.error(f'外包回收失败!请求出现问题 {str(ret)}')
+                except Exception as e:
+                    logger.error(f'外包回收失败!：{str(e)}')
+                    logger.error(traceback.format_exc())
+
+
+
 
 
 

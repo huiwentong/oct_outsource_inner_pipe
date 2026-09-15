@@ -185,9 +185,11 @@
         'testp/test01.png',
         'testp/test02.png',
     ]
-    'asset_name': 'dagui',
+    'entity_name': 'dagui',
+    'type': 'asset'.
     'task_step': 'mod',
     'task_name': 'model',
+    'project': 'mk2',
     'comment': '这次是一次测试提交，用于测试外包回传文件的完整性'
 }
 
