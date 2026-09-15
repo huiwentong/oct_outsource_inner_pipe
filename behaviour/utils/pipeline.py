@@ -112,6 +112,8 @@ class Pipeline():
             try:
                 event = self.queue.get_nowait()
                 event_list.append(asdict(event))
+            except asyncio.QueueEmpty:
+                break
             except Empty:
                 break
         with self.state_file.open('w') as f:
