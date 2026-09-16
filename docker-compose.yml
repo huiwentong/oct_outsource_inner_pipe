@@ -80,6 +80,7 @@ services:
         condition: service_healthy
     volumes:
       - ftpdata:/srv/ftp
+      - ./behaviour:/app/behaviour:ro
       - outsourcelogs:/var/log/outsource
       - bhstate:/var/lib/behaviour
       - /mnt/I:/srv/i

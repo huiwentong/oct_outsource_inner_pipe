@@ -19,6 +19,7 @@ from versionwatch.hashing import hash_file
 from logger.core import watch_logger
 import requests
 import httpx
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 logger = watch_logger
@@ -65,10 +66,12 @@ class Pipeline:
         self._groups: dict[str, _PendingGroup] = {}
         self._stop = asyncio.Event()
         self.client = httpx.AsyncClient(
-            base_url="http://vsftpd:8000"
+            base_url="http://vsftpd:8000",
+            timeout=httpx.Timeout(5.0),
         )
         self.client_behav = httpx.AsyncClient(
-            base_url="http://behavior:8001"
+            base_url="http://behavior:8001",
+            timeout=httpx.Timeout(5.0),
         )
         self.init_from_queue_json()
 
@@ -147,7 +150,17 @@ class Pipeline:
 
 
 
-
+    @retry(
+        stop=stop_after_attempt(3),                          # 最多重试 3 次（含首次）
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=5),  # 指数退避：0.5s → 1s → 2s
+        retry=retry_if_exception_type((                      # 仅对以下异常重试
+            httpx.ConnectError,      # 连接被拒（服务未就绪/重启中）
+            httpx.ReadTimeout,       # 读取超时（重载期间响应慢）
+            httpx.WriteTimeout,      # 写入超时
+            httpx.PoolTimeout,       # 连接池耗尽
+        )),
+        reraise=True,                # 重试耗尽后抛出原始异常
+    )
     async def _process_event(self, ev: FileEvent) -> None:
         await self.recorder.record(ev)
 

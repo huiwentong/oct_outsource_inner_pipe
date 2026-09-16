@@ -16,11 +16,11 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev --no-install-project
 
-COPY behaviour ./behaviour
+# COPY behaviour ./behaviour
 COPY lib ./lib
 COPY logger ./logger
 
 # 运行时需要挂载：FTP 存储、vsftpd 日志、tail 状态目录
 VOLUME ["/srv/ftp", "/var/log/vsftpd", "/var/lib/versionwatch", "/srv/i", "/srv/w"]
 
-CMD ["uvicorn", "behaviour.app:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "behaviour.app:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
