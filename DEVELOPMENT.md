@@ -116,4 +116,94 @@ class ModComponent(StepComponent):
 
 收包程序的开发，稍微有些复杂，它涉及到多个互相引用的docker服务
 
+关于收包程序需要调用到的服务，我设计成了热重载的模式，每当大家完成代码更改后
+
+到服务器中
+```bash
+cd /home/test/test/oct_outsource_inner_pipe
+git pull
+```
+即可完成behaviour模块的热更新，无需重启整个服务或者单个behaviour服务
+
+### 关于log在哪里
+
+所有outsource的log都存放在
+> /var/lib/docker/volumes/outsource-pip_outsourcelogs/_data
+当我们ll时会看到
+```bash
+drwxr-xr-x 2 root root    4096  9月 16 11:04 ./
+drwx-----x 3 root root    4096  8月 13 10:29 ../
+-rw-r--r-- 1 root root     551  9月 16 11:04 behaviour.log
+-rw-r--r-- 1 root root   24420  9月 15 18:25 behaviour.log.2026-09-15
+-rw-r--r-- 1 root root    3887  9月 16 11:04 permissionmanager.log
+-rw-r--r-- 1 root root   39373  8月 13 18:45 permissionmanager.log.2026-08-13
+-rw-r--r-- 1 root root   23202  8月 14 16:16 permissionmanager.log.2026-08-14
+-rw-r--r-- 1 root root    2656  9月  1 10:24 permissionmanager.log.2026-09-01
+-rw-r--r-- 1 root root   16417  9月  2 14:59 permissionmanager.log.2026-09-02
+-rw-r--r-- 1 root root   34093  9月  3 14:59 permissionmanager.log.2026-09-03
+-rw-r--r-- 1 root root     101  9月  4 11:09 permissionmanager.log.2026-09-04
+-rw-r--r-- 1 root root   17746  9月  8 19:08 permissionmanager.log.2026-09-08
+-rw-r--r-- 1 root root    3115  9月  9 14:45 permissionmanager.log.2026-09-09
+-rw-r--r-- 1 root root   53801  9月 15 18:25 permissionmanager.log.2026-09-15
+-rw-r--r-- 1 root root     740  9月 16 11:04 versionwatch.log
+-rw-r--r-- 1 root root     441  8月 14 16:16 versionwatch.log.2026-08-14
+-rw-r--r-- 1 root root     126  9月  1 10:23 versionwatch.log.2026-09-01
+-rw-r--r-- 1 root root   66874  9月  2 17:10 versionwatch.log.2026-09-02
+-rw-r--r-- 1 root root    6125  9月  3 12:49 versionwatch.log.2026-09-03
+-rw-r--r-- 1 root root 1409207  9月  8 19:17 versionwatch.log.2026-09-08
+-rw-r--r-- 1 root root     677  9月  9 14:51 versionwatch.log.2026-09-09
+-rw-r--r-- 1 root root   26642  9月 15 18:30 versionwatch.log.2026-09-15
+```
+针对不同模块的不同服务会有不同的log，在这里我们只需要关注behaviour.log即可
+
+### 收包环节代码的开发注意事项
+
+针对不同环节的代码，都存放在了 /behaviour/dispatch_bahav/{你的环节}.py中
+
+针对一些通用调用的工具，存放在了 /behaviour/utils中包括Deadline的一些官方函数，这块后续可能需要进一步补充，封装成易于我们自己调用的类
+
+同样，不同的环节的逻辑能力也是以Component类来实现的，Component继承自StepComponent类
+所有Component的类需要依赖的数据都在self.event中
+
+Event类
+```python
+@dataclass
+class Event():
+    vendor: str
+    manifest_file:str = ''
+    asset:str = ''
+    step:str = ''
+    checksum:str = ''
+    version:str = ''
+    dst_path:str = ''
+```
+
+关于许多文件合规性检查都在父类中已经实现，我们在子类中只需要关注两个成员函数即可
+
+- check_extra
+
+        这一块是根据不同环节的需求，针对外包商回传的manifest文件和回传数据做更详细的补充
+        manifest文件可以通过self.event.manifest_file来获取到，这个文件是一个json文件
+        如果检查到错误，需要return 错误说明，如果全部检查通过，也需要return ''
+
+
+- publish_to_deadline
+
+        这一块主要是当所有数据回收成功后自动发布的逻辑，
+        需要在这块实现如何将回传到w盘的数据发布到shogun中
+        具体的发布需要使用农场机器进行操作，不能直接在服务器中操作（主要也操作不了）
+        可以在self.event.dst_path中找到数据回传到了w盘的哪个具体位置，需要注意的是这个路径是linux路径
+        如果发布到deadline中需要将此路径转换成windows挂载的路径！
+
+### 成功的收包流程
+
+最终一个成功的收包流程以
+
+1. 外包数据成功扫入到w盘中
+2. w盘中的数据成功发布到shotgun上
+3. shotgun发布成功后根据我们的发布流程在I盘有对应的落盘文件
+4. 成功后钉钉通知到相关人员（相关环节制片，相关外包商）
+
+以上四点为准
+
 
