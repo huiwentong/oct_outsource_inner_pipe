@@ -115,3 +115,27 @@ def check_shotgun_entitys(project, entity_name, asset_type, task_name, task_step
     except Exception:
         return traceback.format_exc()
 
+
+def get_task_context(task_id):
+    sg = FastSg().client
+    try:
+        task_filters = [
+            ['id', 'is', task_id],
+        ]
+
+        fields = ['step', 'id', 'content', 'entity', 'project']
+        ret = sg.find_one('Task', task_filters, fields)
+
+        tc = {
+            'task_id': ret['id'],
+            'task_name': ret['content'],
+            'step_name': ret['step']['name'],
+            'entity_id': ret['entity']['id'],
+            'entity_name': ret['entity']['name'],
+            'entity_type': ret['entity']['type'],
+            'project_id': ret['project']['id'],
+            'project_name': ret['project']['name']
+        }
+    except Exception:
+        return traceback.format_exc()
+    return tc

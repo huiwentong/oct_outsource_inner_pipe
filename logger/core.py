@@ -47,3 +47,4 @@ def get_log(logger_name: str = "permissionmanager", test=False) -> logging.Logge
 
 watch_logger = get_log("versionwatch")
 bh_logger = get_log("behaviour")
+dl_logger = get_log("deadline")

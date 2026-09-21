@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 from behaviour.utils.queueevent import Event
+from behaviour.utils.hashing import hash_file
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 import os
@@ -20,6 +21,7 @@ class Pipeline():
         self.queue = queue
         self.state_file = Path(os.environ['STATE_DIR']) / 'state.json'
         self.logger = logger
+        self.module_hash = {}
         self._stop = asyncio.Event()
 
     async def run(self):
@@ -99,6 +101,21 @@ class Pipeline():
         step = event.step
         try:
             module = importlib.import_module(f'behaviour.dispatch_behav.{step}')
+
+            if self.module_hash.get(step):
+                module_file = module.__file__
+                if not module_file:
+                    raise RuntimeError(f"无法获取模块 {step} 的文件路径")
+                current_hash = hash_file(module_file)
+                if self.module_hash[step] != current_hash:
+                    importlib.reload(module)
+                    self.module_hash[step] = current_hash
+            else:
+                module_file = module.__file__
+                if not module_file:
+                    raise RuntimeError(f"无法获取模块 {step} 的文件路径")
+                self.module_hash[step] = hash_file(module_file)
+
             component = module.Component(event)
             await self.loop.run_in_executor(executor, component.process)
             self.logger.info(f'事件 {event.manifest_file} 处理完成')
