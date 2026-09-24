@@ -117,6 +117,7 @@ class StepComponent:
         ret = add_group2vendor(vender=vendor, groups=all_group)
         print(ret)
         for source, dst in self.transfer_folders.items():
+            print()
             with FtpClient() as ftp:
                 path_s = Path(source)
                 if not path_s.exists():

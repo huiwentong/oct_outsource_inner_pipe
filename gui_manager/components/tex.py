@@ -9,11 +9,12 @@ class TexComponent(StepComponent):
     step:str = "tex"
     name:str = "材质"
     color:str = "#8b5cf6"
-    description:str = "这是一个lay的资产"
+    description:str = "这是一个tex的资产"
     order:int = 2
 
     
     def analysis_relies(self):
+        self.rely_steps = ["mod"]
         pass
     
     def analysis_transfer_folders(self):

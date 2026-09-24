@@ -13,6 +13,7 @@ class RigComponent(StepComponent):
     order:int = 3
 
     def analysis_relies(self):
+        self.rely_steps = ["mod"]
         pass
     
     def analysis_transfer_folders(self):

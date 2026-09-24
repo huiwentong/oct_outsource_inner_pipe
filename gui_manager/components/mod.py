@@ -1,16 +1,18 @@
 from components.core import FieldSpec, StepComponent, register
 from PySide6 import QtWidgets
 from dataclasses import dataclass, field
+from pathlib import Path
+from utils.ftp import FtpClient
+
 
 @register("mod")
 @dataclass
 class ModComponent(StepComponent):
-    step:str = "mod"
-    name:str = "模型"
-    color:str = "#3b82f6"
-    description:str = "这是一个mod的资产"
-    order:int = 1
-
+    step: str = "mod"
+    name: str = "模型"
+    color: str = "#3b82f6"
+    description: str = "这是一个mod的资产"
+    order: int = 1
 
     def analysis_relies(self):
         self.rely_steps = ["mod"]
@@ -18,7 +20,10 @@ class ModComponent(StepComponent):
 
     def analysis_transfer_folders(self):
         pass
-    
+        # self.transfer_folders = {
+        #     r"D:\YESEN\oct_outsource_inner_pipe\yesen_test.ma":
+        #     f"/oct/{self.project}/{self.entity_type}/{self.entity}/{self.step}/yesen_test.ma"
+        # }
 
     def extra_ui(self):
         self.custom_frame = QtWidgets.QFrame()
