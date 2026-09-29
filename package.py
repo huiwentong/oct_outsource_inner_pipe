@@ -14,4 +14,5 @@ requires = [
 
 def commands():
     env.PYTHONPATH.append('{root}/gui_manager')
-    alias('run_app', 'python {root}/gui_manager/collector.py')
+    alias('run_collector', 'python {root}/gui_manager/collector.py')
+    alias('run_usermanager', 'python {root}/gui_manager/usermanager.py')
