@@ -3,7 +3,7 @@ from pprint import pprint
 
 
 def test_requests():
-    url = 'http://192.168.30.9:8000/get_path_group'
+    url = 'http://192.168.20.211:8000/get_path_group'
     # data = {
     #     'path': '/srv/ftp/oct/mk2/asset/dasheng',
     #     'group': 'tex',

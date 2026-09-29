@@ -1,5 +1,5 @@
 
-server_ip: 192.168.30.9
+server_ip: 192.168.20.211
 
 db_port: 5432
 db_user: admin
