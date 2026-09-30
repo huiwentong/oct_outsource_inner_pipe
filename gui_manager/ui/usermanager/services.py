@@ -29,7 +29,16 @@ def check_permission() -> bool:
      2. 调用权限服务接口，判断是否有权限。
     """
     print(getpass.getuser())
-    if getpass.getuser() not in ['huiwentong', 'fengan']:
+    if getpass.getuser() not in [
+        'huiwentong',
+        'fengan',
+        'wangtianyi',
+        'songyutong',
+        'zhouqi',
+        'gongshuai',
+        'zhanglingyun',
+        'yesen'
+    ]:
         return False
 
     return MOCK_HAVE_PERMISSION
