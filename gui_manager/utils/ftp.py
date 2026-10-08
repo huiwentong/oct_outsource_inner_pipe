@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
-
+from utils.hashing import hash_file
+from utils.db import Database
 from ftplib import FTP, error_perm
 
 from utils.config import server_config
@@ -37,6 +38,7 @@ class FtpClient:
         self.port = port or int(cfg.get("ftp_port", 21))
         self.user = user or cfg.get("ftp_user", "")
         self.password = password or str(cfg.get("ftp_pass", ""))
+        self.db = Database()
 
     def connect(self) -> FTP:
         ftp = FTP()
@@ -68,8 +70,15 @@ class FtpClient:
     def upload_file(self, local_path: Path, remote_path: str) -> None:
         remote_path = remote_path.replace("\\", "/")
         self.ensure_remote_dir(self._ftp, str(Path(remote_path).parent))
+
+        file_status = self.db.get_file_status(remote_path)
+        cs = file_status.get('checksum') if file_status else None
+        if hash_file(local_path) == cs:
+            print(f"文件 {local_path} 与远程 {remote_path} 相同，跳过上传。")
+            return
         with Path(local_path).open("rb") as fh:
             self._ftp.storbinary(f"STOR {remote_path}", fh)
+
 
     def upload_dir(self, local_dir: Path, remote_dir: str) -> None:
         """递归上传本地目录到远程目录。"""

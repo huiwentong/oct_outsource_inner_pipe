@@ -91,6 +91,13 @@ class Database:
         sql = "SELECT * FROM ftpuser WHERE name = %s;"
         return self.fetch_one(sql, (name,))
 
+    def get_file_status(self, rel_path: str) -> Optional[dict[str, Any]]:
+        sql = """
+        SELECT * FROM file_state
+        WHERE rel_path = %s 
+        ORDER BY updated_at DESC LIMIT 1;
+        """
+        return self.fetch_one(sql, (rel_path,))
 
     def add_collection_history(self, 
             username, 
@@ -139,3 +146,11 @@ class Database:
                 rely_groups,
             )
         )
+
+
+
+if __name__ == "__main__":
+    db = Database()
+    status = db.get_file_status("oct/tdtest/asset/tao_a/tex/tao_a.tex.texture/usd/comdp.usd")
+    cs = status.get('checksum') if status else None
+    print(cs)
