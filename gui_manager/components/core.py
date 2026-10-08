@@ -9,7 +9,11 @@ from PySide6 import QtCore, QtWidgets
 import components  # noqa: F401  仅为 auto-discover 提供包路径
 from typing import ClassVar
 from utils.permissionmanager import add_group2vendor, create_group
+from utils.shotgun import get_asset_type
 from pathlib import Path
+import tempfile
+import json
+import os
 from utils.ftp import FtpClient
 
 
@@ -63,6 +67,7 @@ class StepComponent:
         self.extra_ui()
         self.analysis_relies()
         self.analysis_transfer_folders()
+        self.gener_default_path()
         
 
 
@@ -106,6 +111,44 @@ class StepComponent:
         editline.setToolTip('\n'.join(files))
         for i in files:
             self.transfer_folders[i] = str(Path(self.ftp_tar) / Path(i).name)
+
+    def gener_default_path(self):
+        for asset in self.rely_assets:
+            asset_name = asset
+            asset_path = f"/oct/{self.project}/{self.entity_type}/{self.entity}"
+            asset_type = get_asset_type(asset_name, self.project)
+            if not asset_type:
+                raise ValueError(f"无法获取资产 {asset_name} 的类型，请检查 Shotgun 数据！")
+            
+            config_file = Path(tempfile.gettempdir()) / f"{asset_name}/default_path.json"
+            default_paths = {}
+
+            if config_file.exists():
+                config_file.unlink()
+
+            default_path = f'I:/projects/{self.project.lower()}/asset/{asset_type}/{asset_name}'
+
+            d_path_file = Path(asset_path) / config_file.name
+            if d_path_file.exists():
+                return
+
+            default_paths = {
+                "entity_name": asset_name,
+                "default_path": default_path
+            }
+
+            try:
+                with config_file.open("w", encoding="utf-8") as f:
+                    json.dump(
+                        default_paths,
+                        f,
+                        indent=4,
+                        ensure_ascii=False
+                    )
+            except Exception:
+                pass
+
+            self.transfer_folders[str(config_file)] = str(d_path_file)
 
 
     def start_collection(self, vendor):

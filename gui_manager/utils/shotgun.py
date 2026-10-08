@@ -120,7 +120,12 @@ def get_project_entities_name(project_id: str) -> list[str]:
     return [[e['code'], e['type'].lower()] for e in asset_entities] + [[e['code'], e['type'].lower()] for e in shot_entities]
 
 
+def get_asset_type(asset_name: str, project_name: str) -> str|None:
+    """返回资产类型列表。"""
+    sg = FastSg().client
+    asset = sg.find_one('Asset', [['project', 'name_is', project_name],['code', 'is', asset_name]], ['sg_asset_type'])
 
+    return asset.get('sg_asset_type') if asset else None
 
 
 if __name__ == '__main__':
