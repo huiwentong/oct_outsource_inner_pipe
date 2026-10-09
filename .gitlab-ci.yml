@@ -1,3 +1,4 @@
+# 这里需要选择包含git的镜像
 variables:
   DEPLOY_DIR: "/mnt/shuju/scriptsource/oct_outsource_inner_pipe"
 
