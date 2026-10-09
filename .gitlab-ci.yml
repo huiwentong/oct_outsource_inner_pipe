@@ -6,7 +6,7 @@ variables:
 before_script:
   - cd "$DEPLOY_DIR"
   - mkdir -p ~/.ssh
-  - echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+  - echo -e "Host *\n\tStrictHostKeyChecking no\n\tKexAlgorithms +diffie-hellman-group14-sha256,diffie-hellman-group-exchange-sha256\n\tHostKeyAlgorithms +ssh-ed25519,ecdsa-sha2-nistp256,rsa-sha2-256\n" > ~/.ssh/config
   - echo "当前目录 $PWD"
   - git pull origin "$CI_COMMIT_BRANCH"
 
