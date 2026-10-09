@@ -1,3 +1,12 @@
+variables:
+  DEPLOY_DIR: "/mnt/shuju/scriptsource/oct_outsource_inner_pipe"
+
+
+before_script:
+  - cd "$DEPLOY_DIR"
+  - git pull origin "$CI_COMMIT_BRANCH"
+
+
 build-job:
   stage: build
   script:
@@ -6,18 +15,16 @@ build-job:
 test-job1:
   stage: test
   script:
-    - echo "这个作业测试某些东西"
+    - echo "这里测试pipeline有没有顺利执行下去"
+    - sleep 5
 
-test-job2:
-  stage: test
-  script:
-    - echo "这个作业测试某些东西，但比 test-job1 花费更多时间。"
-    - echo "在 echo 命令完成后，它运行 sleep 命令 20 秒"
-    - echo "这模拟了一个比 test-job1 多运行 20 秒的测试"
-    - sleep 20
 
 deploy-prod:
   stage: deploy
   script:
     - echo "这个作业从 $CI_COMMIT_BRANCH 分支部署某些东西。"
+    # 在这里添加你的实际部署命令，例如：
+    # - docker compose up -d
+    # - systemctl restart your-service
+    # 但是我这里设计了热重载，应该不需要这一条，后续我再相帮发补充吧！
   environment: production
