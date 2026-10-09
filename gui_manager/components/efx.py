@@ -12,7 +12,7 @@ class EfxComponent(StepComponent):
     name:str = "特效"
     color:str = "#ec4899"
     description:str = "这是一个efx的资产"
-    order:int = 7
+    order:int = 9
 
     def analysis_relies(self):
         pass

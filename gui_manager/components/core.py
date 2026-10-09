@@ -115,7 +115,7 @@ class StepComponent:
     def gener_default_path(self):
         for asset in self.rely_assets:
             asset_name = asset
-            asset_path = f"/oct/{self.project}/{self.entity_type}/{self.entity}"
+            asset_path = f"/oct/{self.project}/{self.entity_type}/{asset_name}"
             asset_type = get_asset_type(asset_name, self.project)
             if not asset_type:
                 raise ValueError(f"无法获取资产 {asset_name} 的类型，请检查 Shotgun 数据！")
@@ -126,7 +126,7 @@ class StepComponent:
             if config_file.exists():
                 config_file.unlink()
 
-            default_path = f'I:/projects/{self.project.lower()}/asset/{asset_type}/{asset_name}'
+            default_path = f'I:/projects/{self.project.lower()}/asset/{asset_type.lower()}/{asset_name}'
 
             d_path_file = Path(asset_path) / config_file.name
             if d_path_file.exists():

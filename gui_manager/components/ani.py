@@ -8,7 +8,7 @@ class AniComponent(StepComponent):
     step:str = "ani"
     name:str = "动画"
     color:str = "#f59e0b"
-    order:int = 5
+    order:int = 7
     description:str = "这是一个ani的资产"
 
     def analysis_relies(self):

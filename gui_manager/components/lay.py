@@ -10,7 +10,7 @@ class LayComponent(StepComponent):
     name:str = "Layout"
     color:str = "#14b8a6"
     description:str = "这是一个lay的资产"
-    order:int = 4
+    order:int = 6
 
 
     def analysis_relies(self):

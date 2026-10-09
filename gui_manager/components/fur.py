@@ -1,0 +1,68 @@
+from components.core import FieldSpec, StepComponent, register
+from PySide6 import QtWidgets
+from dataclasses import dataclass, field
+from pathlib import Path
+from utils.shotgun import FastSg
+
+
+@register("fur")
+@dataclass
+class FurComponent(StepComponent):
+    step: str = "fur"
+    name: str = "毛发"
+    color: str = "#9333ea"
+    description: str = "这是一个fur的资产"
+    order: int = 4
+
+    def analysis_relies(self):
+        self.rely_steps = ["mod"]
+        self.rely_assets = [self.entity]
+
+    def analysis_transfer_folders(self):
+        print('fur analysis_transfer_folders')
+        mapping = {
+            "mod": "model",
+            "rig": "rigging",
+            "tex": "texture",
+            "fur": "hair",
+        }
+        steps = self.rely_steps
+        for step in steps:
+            sg = FastSg().client
+            sg_task = mapping[step]
+            filters = [
+                ['entity', 'name_is', self.entity],
+                ['project', 'name_is', self.project],
+                ['sg_task', 'name_is', sg_task],
+            ]
+            fields = ['sg_path_to_geometry']
+            orders = [
+                {'field_name': 'id', 'direction': 'desc'},
+            ]
+            sg_version = sg.find_one('Version', filters, fields, order=orders)
+            if not sg_version:
+                continue
+            path_to_geometry = sg_version['sg_path_to_geometry']
+            loc_step_dir = str(Path(path_to_geometry).parent.parent)
+            ftp_step_dir = f"/oct/{self.project}/{self.entity_type}/{self.entity}/{step}"
+
+            v_name = str(Path(path_to_geometry).parent.name)
+            loc_v_dir = str(Path(loc_step_dir) / v_name)
+            ftp_v_dir = ftp_step_dir + '/' + v_name
+            if Path(loc_v_dir).exists():
+                self.transfer_folders[loc_v_dir] = ftp_v_dir
+
+            non_v_name = v_name[0:-len('.' + v_name.split('.')[-1])]
+            loc_non_v_dir = str(Path(loc_step_dir) / non_v_name)
+            ftp_non_v_dir = ftp_step_dir + '/' + non_v_name
+            if Path(loc_non_v_dir).exists():
+                self.transfer_folders[loc_non_v_dir] = ftp_non_v_dir
+
+            usda_file_name = self.entity + '.{}'.format(step) + '.usda'
+            loc_usda_file = str(Path(loc_step_dir) / usda_file_name)
+            ftp_usda_file = ftp_step_dir + '/' + usda_file_name
+            if Path(loc_usda_file).exists():
+                self.transfer_folders[loc_usda_file] = ftp_usda_file
+
+    def extra_ui(self):
+        self.custom_frame = QtWidgets.QFrame()
