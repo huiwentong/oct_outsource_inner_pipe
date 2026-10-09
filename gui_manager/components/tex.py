@@ -25,8 +25,6 @@ class TexComponent(StepComponent):
             "tex": "texture",
         }
         steps = self.rely_steps
-        if self.step not in steps:
-            steps.append(self.step)
         for step in steps:
             sg = FastSg().client
             sg_task = mapping[step]
@@ -57,6 +55,12 @@ class TexComponent(StepComponent):
             ftp_non_v_dir = ftp_step_dir + '/' + non_v_name
             if Path(loc_non_v_dir).exists():
                 self.transfer_folders[loc_non_v_dir] = ftp_non_v_dir
+
+            usda_file_name = self.entity + '.{}'.format(step) + '.usda'
+            loc_usda_file = str(Path(loc_step_dir) / usda_file_name)
+            ftp_usda_file = ftp_step_dir + '/' + usda_file_name
+            if Path(loc_usda_file).exists():
+                self.transfer_folders[loc_usda_file] = ftp_usda_file
 
     def extra_ui(self):
         self.custom_frame = QtWidgets.QFrame()

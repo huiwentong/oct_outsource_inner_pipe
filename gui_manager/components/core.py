@@ -137,6 +137,9 @@ class StepComponent:
                 "default_path": default_path
             }
 
+            if not Path(config_file).parent.exists():
+                Path(config_file).parent.mkdir(parents=True, exist_ok=True)
+
             try:
                 with config_file.open("w", encoding="utf-8") as f:
                     json.dump(
