@@ -1,0 +1,33 @@
+# 这里需要选择包含git的镜像
+variables:
+  DEPLOY_DIR: "/mnt/shuju/scriptsource/oct_outsource_inner_pipe"
+
+
+before_script:
+  - cd "$DEPLOY_DIR"
+  - git remote set-url origin "http://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.ds.com/${CI_PROJECT_PATH}.git"
+  - echo "当前目录 $PWD"
+  - git pull origin "$CI_COMMIT_BRANCH"
+
+
+build-job:
+  stage: build
+  script:
+    - echo "你好，$GITLAB_USER_LOGIN！"
+
+test-job1:
+  stage: test
+  script:
+    - echo "这里测试pipeline有没有顺利执行下去"
+    - sleep 5
+
+
+deploy-prod:
+  stage: deploy
+  script:
+    - echo "这个作业从 $CI_COMMIT_BRANCH 分支部署某些东西。"
+    # 在这里添加你的实际部署命令，例如：
+    # - docker compose up -d
+    # - systemctl restart your-service
+    # 但是我这里设计了热重载，应该不需要这一条，后续我再相帮发补充吧！
+  environment: production
