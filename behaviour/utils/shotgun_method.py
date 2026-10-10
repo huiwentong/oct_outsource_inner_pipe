@@ -89,26 +89,32 @@ class FastSg(object):
                 continue
         return None
 
+def find_task(project, entity_name, asset_type, task_name):
+
+    sg = FastSg().client
+    task_filters = [
+        ['project', 'name_is', project],
+        ['entity', 'name_is', entity_name],
+        ['entity', 'type_is', asset_type],
+        ['content', 'is', task_name]
+    ]
+
+    fields = ['step', 'id']
+    task = sg.find_one('Task', task_filters, fields)
+
+    return task
+
 
 def check_shotgun_entitys(project, entity_name, asset_type, task_name, task_step) -> str:
-    sg = FastSg().client
+
     try:
-        task_filters = [
-            ['project', 'name_is', project],
-            ['entity', 'name_is', entity_name],
-            ['entity', 'type_is', asset_type],
-            ['content', 'is', task_name]
-        ]
-
-        fields = ['step', 'id']
-
-        task = sg.find_one('Task', task_filters, fields)
+        task = find_task(project, entity_name, asset_type, task_name)
 
         if not task:
             return f'can not find task {project} {entity_name} {task_name}'
-
-        if task_step != STEP_MAP[task['step']['name']]:
-            return f'manifest中所指定的step {task_step}与Sg中找到的step: {STEP_MAP[task['step']['name']]}不一致'
+        map_step = STEP_MAP[task['step']['name']]
+        if task_step != map_step:
+            return f'manifest中所指定的step {task_step}与Sg中找到的step: {map_step}不一致'
 
         return ''
 
