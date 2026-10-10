@@ -9,3 +9,19 @@ __pycache__/
 .env
 *.log
 *.state
+# IDE
+.idea/
+
+# AI 助手相关文件（仅本地保留）
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+.claude/
+.codex/
+.cursor/
+.gemini/
+.gitnexus/
+
+# 本地开发计划
+ani_collector_plan.md

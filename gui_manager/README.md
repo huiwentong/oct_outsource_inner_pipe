@@ -6,8 +6,8 @@
 
 | 工具 | 入口 | 用途 |
 | --- | --- | --- |
-| collector | `python collector.py` | 制片选择项目 / 资产 / 环节后，把制作文件抓包并发送给外包方 |
-| usermanager | `python usermanager.py` | 在数据库与 FTP 中新增外包方用户、生成密码并赋予权限 |
+| collector | `uv run collector` | 制片选择项目 / 资产 / 环节后，把制作文件抓包并发送给外包方 |
+| usermanager | `uv run usermanager` | 在数据库与 FTP 中新增外包方用户、生成密码并赋予权限 |
 
 > 当前两个工具的界面数据与后台逻辑均为 mock，真实查询 / 抓包 / 入库逻辑按 `project.md` 后续补充。
 
@@ -35,8 +35,8 @@ utils/                          # 两个 GUI 共用的基础逻辑
 
 ```bash
 uv sync          # 安装依赖（见 pyproject.toml）
-python collector.py     # 或 uv run collector.py
-python usermanager.py
+uv run collector        # 启动发包工具
+uv run usermanager      # 启动用户管理工具
 ```
 
 ## 后续接入点

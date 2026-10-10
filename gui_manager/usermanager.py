@@ -1,4 +1,4 @@
-"""usermanager 启动入口: python usermanager.py"""
+"""usermanager 启动入口: uv run usermanager"""
 
 from PySide6.QtWidgets import QApplication
 

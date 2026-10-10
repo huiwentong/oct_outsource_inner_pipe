@@ -30,8 +30,11 @@ cd 进相关开发包有pyproject.toml的根目录
 
 ```bash
 cd gui_manager
-uv run python -m collector
+uv run collector       # 发包程序
+uv run usermanager     # 用户管理程序
 ```
+
+> 入口在 gui_manager/pyproject.toml 的 [project.scripts] 中声明，uv sync 时会以可编辑模式安装，改代码无需重新 sync
 
 对于单环节的开发，我们只需要关注环节代码即可
 
