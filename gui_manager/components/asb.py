@@ -54,7 +54,7 @@ class AsbComponent(StepComponent):
         # 收集所有可达子资产
         sub_assets = sg_asset.get('assets', [])
 
-        # 用队列遍历所有子资产，找到没有子资产的末端资产
+        # 用队列遍历所有子资产，找到所有相关资产
         queue = []
         for sub_asset in sub_assets:
             sub_asset_name = sub_asset.get('name', '')
@@ -71,6 +71,8 @@ class AsbComponent(StepComponent):
                 continue
 
             visited.add(asset_name)
+            # 无论是否有子资产，都加入 rely_assets
+            self.rely_assets.append(asset_name)
 
             # 查询当前资产是否还有子资产
             child_filters = [
@@ -88,9 +90,6 @@ class AsbComponent(StepComponent):
                     child_name = child.get('name', '')
                     if child_name and child_name not in visited:
                         queue.append(child_name)
-            else:
-                # 没有子资产，说明是末端资产
-                self.rely_assets.append(asset_name)
 
     def analysis_transfer_folders(self):
         print('asb analysis_transfer_folders')
@@ -142,10 +141,13 @@ class AsbComponent(StepComponent):
                 usda_file_name = rely_asset + '.{}'.format(step) + '.usda'
                 loc_usda_file = str(Path(loc_step_dir) / usda_file_name)
                 ftp_usda_file = ftp_step_dir + '/' + usda_file_name
-                print("loc_usda_file: {}".format(loc_usda_file))
-                print("ftp_usda_file: {}".format(ftp_usda_file))
                 if Path(loc_usda_file).exists():
                     self.transfer_folders[loc_usda_file] = ftp_usda_file
+
+                loc_asb_path = str(Path(path_to_geometry).parent.parent.parent / 'asb')
+                ftp_asb_path = f"/oct/{self.project}/{self.entity_type}/{rely_asset}/asb"
+                if Path(loc_asb_path).exists():
+                    self.transfer_folders[loc_asb_path] = ftp_asb_path
 
     def extra_ui(self):
         self.custom_frame = QtWidgets.QFrame()

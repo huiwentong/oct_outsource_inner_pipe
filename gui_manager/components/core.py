@@ -113,20 +113,29 @@ class StepComponent:
             self.transfer_folders[i] = str(Path(self.ftp_tar) / Path(i).name)
 
     def gener_default_path(self):
+        mapping = {
+            "ASB": "asb",
+            "CH": "chr",
+            "EFX": "efx",
+            "ENV": "env",
+            "PROP": "prp",
+            "SCN": "scn",
+        }
         for asset in self.rely_assets:
             asset_name = asset
             asset_path = f"/oct/{self.project}/{self.entity_type}/{asset_name}"
             asset_type = get_asset_type(asset_name, self.project)
             if not asset_type:
                 raise ValueError(f"无法获取资产 {asset_name} 的类型，请检查 Shotgun 数据！")
-            
+
+            asset_type = mapping[asset_type]
             config_file = Path(tempfile.gettempdir()) / f"{asset_name}/default_path.json"
             default_paths = {}
 
             if config_file.exists():
                 config_file.unlink()
 
-            default_path = f'I:/projects/{self.project.lower()}/asset/{asset_type.lower()}/{asset_name}'
+            default_path = f'I:/projects/{self.project.lower()}/asset/{asset_type}/{asset_name}'
 
             d_path_file = Path(asset_path) / config_file.name
             if d_path_file.exists():
