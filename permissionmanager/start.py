@@ -173,7 +173,7 @@ def refresh_file_acs():
                     [
                         'setfacl',
                         '-m',
-                        f'g:{group}:r-x',
+                        f'g:{group}:r-x,o:--x',
                         str(path)
                     ],
                     check=True,
@@ -189,7 +189,7 @@ def refresh_file_acs():
                     [
                         'setfacl',
                         '-m',
-                        f'g:{entity}:r-x',
+                        f'g:{entity}:r-x,o:--x',
                         str(path)
                     ],
                     check=True,
@@ -205,7 +205,7 @@ def refresh_file_acs():
                     [
                         'setfacl',
                         '-m',
-                        f'g:{step}:r-x',
+                        f'g:{step}:r-x,o:--x',
                         str(path)
                     ],
                     check=True,
@@ -215,7 +215,7 @@ def refresh_file_acs():
                         'setfacl',
                         '-d',
                         '-m',
-                        f'g:{step}:r-x',
+                        f'g:{step}:r-x,o:--x',
                         str(path)
                     ],
                     check=True,

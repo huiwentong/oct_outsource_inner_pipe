@@ -12,7 +12,7 @@ api_key = os.environ['sg_api_key']
 STEP_MAP = {
     '绑定': 'rig',
     'mod': 'mod',
-    'Textrue': 'tex',
+    'Texture': 'tex',
     'Fur': 'fur',
     'cfx': 'cfx',
     'CFX': 'dyn',
