@@ -7,8 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 from dataclasses import asdict
-from utils.permissionmanager import get_users
-from dispatch_behav.core import StepProcessError
+from behaviour.utils.permissionmanager import get_users
+from behaviour.dispatch_behav.core import StepProcessError
 from queue import Empty
 import json
 
