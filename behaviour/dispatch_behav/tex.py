@@ -45,7 +45,7 @@ class Component(StepComponent):
         return None
 
     def publish_to_ddline(self):
-        root = Path(self.event.manifest_file).parent
+        root = Path(self.event.dst_path) / self.event.version
         root = to_win_path(root)
         manifest_data = self.get_manifest_data()
 
