@@ -121,7 +121,8 @@ class Pipeline():
             vendor_name = event.manifest_file.split('/')[3]
             userlist = get_users(user_name=vendor_name)
 
-            component = module.Component(event, [u['dingtalk_id'] for u in userlist])
+            component = module.Component(event)
+            component.append_msg_ids(userlist[0]['dingtalk_id'])
             await self.loop.run_in_executor(executor, component.process)
             self.logger.info(f'事件 {event.manifest_file} 处理完成')
         except StepProcessError:

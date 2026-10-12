@@ -29,11 +29,14 @@ class StepProcessError(RuntimeError):
 
 class StepComponent(ABC):
 
-    def __init__(self, event:Event, msg_ids: list[str]|None=None) -> None:
+    def __init__(self, event:Event) -> None:
         self.event = event
         self.logger = logger
-        self.msg_ids = msg_ids or []
-        
+        self.msg_ids = []
+
+    def append_msg_ids(self, id):
+        self.msg_ids.append(id)
+    
     def process(self):
         error = self.check_manifest_file()
         if error:
