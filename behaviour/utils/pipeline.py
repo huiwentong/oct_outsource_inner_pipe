@@ -126,7 +126,6 @@ class Pipeline():
             await self.loop.run_in_executor(executor, component.process)
             self.logger.info(f'事件 {event.manifest_file} 处理完成')
         except StepProcessError:
-            self.queue.put_nowait(event)
             self.logger.error(f'导入模块{step}时出现常规捕获性错误')
             self.logger.error(traceback.format_exc())
         except Exception:
