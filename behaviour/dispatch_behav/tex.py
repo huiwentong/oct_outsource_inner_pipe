@@ -49,15 +49,13 @@ class Component(StepComponent):
         root = to_win_path(root)
         manifest_data = self.get_manifest_data()
 
-        upload_file = manifest_data['upload_files']
-        publish_type = 'Publish' if upload_file else 'Dailies'
-
         publish_options = manifest_data['publish_options']
         maya_file = publish_options['ma_file']
         publish_options['ma_file'] = str(Path(root) / maya_file)
         src_tex_files = publish_options.get('src_tex_files', [])
         publish_options['src_tex_files'] = [str(Path(root) / i) for i in src_tex_files]
 
+        publish_type = 'Publish' if maya_file else 'Dailies'
         version_num = Path(maya_file).stem.split(".")[-1]
 
         entity_name = manifest_data['entity_name']
@@ -87,4 +85,5 @@ class Component(StepComponent):
         _job.set_job_error_limit(number=3)
         _job.set_task_timeout_minutes(minutes='60')
         job_id = _job.submit()
-        print(f'创建manifest任务成功, 任务ID: {job_id}')
+        self.logger.info(f'创建manifest任务成功, 任务ID: {job_id}')
+        return None
