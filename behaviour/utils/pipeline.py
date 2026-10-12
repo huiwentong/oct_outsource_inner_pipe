@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 from dataclasses import asdict
+from utils.permissionmanager import get_users
+from dispatch_behav.core import StepProcessError
 from queue import Empty
 import json
 
@@ -116,12 +118,19 @@ class Pipeline():
                     raise RuntimeError(f"无法获取模块 {step} 的文件路径")
                 self.module_hash[step] = hash_file(module_file)
 
-            component = module.Component(event)
+            vendor_name = event.manifest_file.split('/')[3]
+            userlist = get_users(user_name=vendor_name)
+
+            component = module.Component(event, [u['dingtalk_id'] for u in userlist])
             await self.loop.run_in_executor(executor, component.process)
             self.logger.info(f'事件 {event.manifest_file} 处理完成')
+        except StepProcessError:
+            self.queue.put_nowait(event)
+            self.logger.error(f'导入模块{step}时出现常规捕获性错误')
+            self.logger.error(traceback.format_exc())
         except Exception:
             self.queue.put_nowait(event)
-            self.logger.error(f'导入模块{step}时出现错误')
+            self.logger.error(f'导入模块{step}时出现意外的错误')
             self.logger.error(traceback.format_exc())
             await self._flush_all()
             raise RuntimeError('出现了错误，阻塞所有进程')

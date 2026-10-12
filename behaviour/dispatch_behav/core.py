@@ -8,32 +8,52 @@ from behaviour import logger
 from pathlib import Path
 from behaviour.utils.shotgun_method import check_shotgun_entitys
 import shutil
+import requests
+from datetime import datetime
+
+
+class StepProcessError(RuntimeError):
+    """步骤组件处理失败时抛出的自定义异常"""
+
+    def __init__(self, message: str, event: Event | None = None):
+        self.event = event
+        super().__init__(message)
+
+    def __str__(self):
+        base = super().__str__()
+        if self.event:
+            return f"{base} | {self.event.summery()}"
+        return base
+
 
 
 class StepComponent(ABC):
 
-    def __init__(self, event:Event) -> None:
+    def __init__(self, event:Event, msg_ids: list[str]|None=None) -> None:
         self.event = event
         self.logger = logger
+        self.msg_ids = msg_ids or []
         
-        
-    
     def process(self):
         error = self.check_manifest_file()
         if error:
             self.logger.error(error)
-            raise RuntimeError(error)
+            self.send_message(False, error+self.event.summery())
+            raise StepProcessError(error, self.event)
         error = self.check_extra()
         if error:
             self.logger.error(error)
-            raise RuntimeError(error)
+            self.send_message(False, error+self.event.summery())
+            raise StepProcessError(error, self.event)
         error = self.check_shotgun()
         if error:
             self.logger.error(error)
-            raise RuntimeError(error)
+            self.send_message(False, error+self.event.summery())
+            raise StepProcessError(error, self.event)
         
         self.copy_to_w()
         self.publish_to_ddline()
+        self.send_message(True, 'manifest解析成功！'+self.event.summery())
 
 
     def check_manifest_file(self):
@@ -125,4 +145,34 @@ class StepComponent(ABC):
         return ''
 
 
+    def send_message(self, status:bool, message:str):
+        for uid in self.msg_ids:
+            url = 'http://192.168.20.217:8080/ding/msg/simple'
+        
+            mk_message = """
+# {title}
+___
+{message}
+***
+`发送时间： {datetime_now}`
+""".format(
+            title=["❌ 打包回传的manifest文件识别失败！", "🚀 打包回传的manifest文件识别成功！"][status],
+            message=message,
+            datetime_now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+            post_data = {
+                'title': '来自十月的收包通知' ,
+                'text': mk_message
+            }
+        
+            ret = requests.post(
+                url=url,
+                params={'user_id': uid},
+                data=json.dumps(post_data)
+            )
+        
+            ret.raise_for_status()
+            return ret.json()
+        
+        
 

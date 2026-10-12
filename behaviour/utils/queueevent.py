@@ -17,7 +17,14 @@ class Event():
     version:str = ''
     dst_path:str = ''
 
-
+    def summery(self):
+        return """\n
+manifest_file: {}
+asset: {}
+step: {}
+version: {}
+dst_path: {}
+""".format(self.manifest_file, self.asset, self.step, self.version, self.dst_path)
 
 def find_dst_path_and_version(data):
     path = Path(f'/srv/w/projects/{data["project"]}/outsourcing/{data["type"]}/{data["entity_name"]}/{data["task_step"]}')
