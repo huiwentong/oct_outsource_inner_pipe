@@ -71,7 +71,8 @@ class FtpClient:
         remote_path = remote_path.replace("\\", "/")
         self.ensure_remote_dir(self._ftp, str(Path(remote_path).parent))
 
-        file_status = self.db.get_file_status(remote_path)
+        db_remote_path = "oct/" + remote_path.split("oct/")[1]
+        file_status = self.db.get_file_status(db_remote_path)
         cs = file_status.get('checksum') if file_status else None
         if hash_file(local_path) == cs:
             print(f"文件 {local_path} 与远程 {remote_path} 相同，跳过上传。")
