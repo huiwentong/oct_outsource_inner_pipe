@@ -43,14 +43,17 @@ class Component(StepComponent):
             if len(invalid_upload_files) > 0:
                 return "以下文件名存在非法字符（空格，中文，特殊字符等）, 请修改文件名：\n {}".format(
                     '\n'.join(invalid_upload_files))
-            return None
+
         except Exception as e:
+            self.logger.error(e)
             return e
 
     def publish_to_ddline(self):
         try:
             root = Path(self.event.dst_path) / self.event.version
             root = to_win_path(root)
+            self.logger.info("windows root: {}".format(root))
+            self.logger.info("linux root: {}".format(Path(self.event.dst_path) / self.event.version))
             manifest_data = self.get_manifest_data()
 
             publish_options = manifest_data['publish_options']
@@ -79,17 +82,20 @@ class Component(StepComponent):
                         "notify": ["gongshuai"],
                         "input_form": publish_options}
 
-            publish_json = write_temp_json(pub_data)
+            publish_json = write_temp_json(pub_data, "/srv/w/temp/temp_files")
             cmd = "rez-env PySide2 oct_publish -- batch_cli {}".format(publish_json)
+            self.logger.info("submit to deadline cmd: {}".format(cmd))
             job_name = "Texture Outsource Recycle: {}".format(entity_name)
             _job = CommandLineJob(name=job_name)
             _job.set_command(cmd)
-            _job.set_pool('user')
+            _job.set_pool('render')
             _job.set_priority(priority=100)
             _job.set_job_error_limit(number=3)
             _job.set_task_timeout_minutes(minutes='60')
+            _job.set_deny_list(['ls', 'liulu'])
             job_id = _job.submit()
             self.logger.info(f'创建manifest任务成功, 任务ID: {job_id}')
-            return None
+
         except Exception as e:
+            self.logger.error(e)
             return e
