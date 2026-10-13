@@ -43,8 +43,8 @@ def to_win_path(lux_path):
     lux_path = str(lux_path)
     print("source path:", lux_path)
     path_map = {
-        '/srv/i/': 'i:/',
-        '/srv/w/': 'w:/',
-        '/srv/s/': 's:/',
+        '/srv/i/': 'I:/',
+        '/srv/w/': 'W:/',
+        '/srv/s/': 'S:/',
     }
     return path_map[lux_path[:7].lower()] + lux_path[7:]
