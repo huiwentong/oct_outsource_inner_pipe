@@ -28,6 +28,7 @@ from logger.core import watch_logger
 from versionwatch.config import Settings
 from versionwatch.hashing import hash_file
 from versionwatch.events import EventSource, EventType, FileEvent, normalize_rel_path
+from versionwatch.warning_msg import send_warning_message
 
 logger = watch_logger
 

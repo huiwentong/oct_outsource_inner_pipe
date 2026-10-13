@@ -6,6 +6,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
+from behaviour.utils.warning_msg import send_warning_message
 from dataclasses import asdict
 from behaviour.utils.permissionmanager import get_users
 from behaviour.dispatch_behav.core import StepProcessError
@@ -61,6 +62,7 @@ class Pipeline():
 
             await self._flush_all()
         except Exception:
+            send_warning_message("pipeline 异常退出")
             self.logger.exception("pipeline 异常退出")
             raise
         
@@ -132,6 +134,7 @@ class Pipeline():
             self.queue.put_nowait(event)
             self.logger.error(f'导入模块{step}时出现意外的错误')
             self.logger.error(traceback.format_exc())
+            send_warning_message(f'导入模块{step}时出现意外的错误\n'+traceback.format_exc())
             await self._flush_all()
             raise RuntimeError('出现了错误，阻塞所有进程')
 

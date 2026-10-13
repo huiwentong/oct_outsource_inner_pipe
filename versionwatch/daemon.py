@@ -14,6 +14,7 @@ from versionwatch.fs_watch import FsWatcher
 from versionwatch.hash_scan import HashScanner
 from versionwatch.pipeline import Pipeline
 from versionwatch.recorder import Recorder
+from versionwatch.warning_msg import send_warning_message
 from logger.core import watch_logger
 
 
@@ -85,6 +86,7 @@ def main() -> None:
     except Exception as exc:
         print(f"配置加载失败: {exc}", file=sys.stderr)
         print("必需环境变量: VW_ROOT_DIR, VW_FTP_LOG, VW_DATABASE_URL", file=sys.stderr)
+        send_warning_message('version watch 启动失败！')
         sys.exit(2)
     try:
         asyncio.run(_run(settings))

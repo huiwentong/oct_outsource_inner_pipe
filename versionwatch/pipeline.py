@@ -14,6 +14,7 @@ import json
 from versionwatch.config import Settings
 from dataclasses import asdict
 from versionwatch.recorder import Recorder
+from versionwatch.warning_msg import send_warning_message
 from versionwatch.events import EventSource, EventType, FileEvent
 from versionwatch.hashing import hash_file
 from logger.core import watch_logger
@@ -224,6 +225,7 @@ class Pipeline:
                         logger.info(f'为环节文件{group}添加权限')
                         logger.info(response.json())
             except Exception as e:
+                send_warning_message(f'权限审查失败，错误信息：{str(e)}'+traceback.format_exc())
                 logger.error(f'权限审查失败，错误信息：{str(e)}')
                 logger.error(traceback.format_exc())
 
@@ -247,6 +249,7 @@ class Pipeline:
                     else:
                         logger.error(f'外包回收失败!请求出现问题 {str(ret)}')
                 except Exception as e:
+                    send_warning_message(f'外包回收失败!：{str(e)}\n'+traceback.format_exc())
                     logger.error(f'外包回收失败!：{str(e)}')
                     logger.error(traceback.format_exc())
 

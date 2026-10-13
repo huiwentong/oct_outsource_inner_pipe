@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 import psycopg2
 from permissionmanager.core.user_manager import Database, FTPUserManager
+from permissionmanager.core.warning_msg import send_warning_message
 from logger.core import get_log
 import traceback
 
@@ -315,5 +316,6 @@ def start():
         fill_by_db()
         refresh_file_acs()
     except Exception as e:
-        logger.error(traceback)
+        send_warning_message('权限管理模块启动出现问题，可能未完成文件的权限更新和用户组的创建！\n'+traceback.format_exc())
+        logger.error(traceback.format_exc())
         raise RuntimeError(e)
