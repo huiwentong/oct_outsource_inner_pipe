@@ -60,7 +60,7 @@ class Component(StepComponent):
             maya_file = publish_options['ma_file']
             publish_options['ma_file'] = str(Path(root) / maya_file)
             src_tex_files = publish_options.get('src_tex_files', [])
-            publish_options['src_tex_files'] = [str(Path(root) / i) for i in src_tex_files]
+            publish_options['src_tex_files'] = [str(Path(root) / i) for i in src_tex_files] if src_tex_files else ["None"]
 
             publish_type = 'Publish' if maya_file else 'Dailies'
             version_num = Path(maya_file).stem.split(".")[-1]
