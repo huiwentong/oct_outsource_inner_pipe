@@ -72,7 +72,7 @@ class Component(StepComponent):
             task = find_task(project, entity_name, asset_type, task_name)
 
             pub_data = {"task_id": task["id"],
-                        "dcc_file": maya_file,
+                        "dcc_file": str(Path(root)/ maya_file),
                         "version_num": version_num,
                         "user": "gongshuai",
                         "comment": manifest_data['comment'],
@@ -83,7 +83,8 @@ class Component(StepComponent):
                         "input_form": publish_options}
 
             publish_json = write_temp_json(pub_data, "/srv/w/temp/temp_files")
-            cmd = "rez-env PySide2 oct_publish -- batch_cli {}".format(publish_json)
+            cmd = ('rez-env --paths "//tools02.ds.com/pipeline/packages/int;//tools02.ds.com/pipeline/packages/ext;//tools02.ds.com/pipeline/packages" '
+                   'PySide2 oct_publish -- batch_cli {}').format(publish_json)
             self.logger.info("submit to deadline cmd: {}".format(cmd))
             job_name = "Texture Outsource Recycle: {}".format(entity_name)
             _job = CommandLineJob(name=job_name)
