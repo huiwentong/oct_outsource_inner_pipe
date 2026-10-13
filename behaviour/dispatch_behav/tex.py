@@ -92,6 +92,7 @@ class Component(StepComponent):
             _job.set_priority(priority=100)
             _job.set_job_error_limit(number=3)
             _job.set_task_timeout_minutes(minutes='60')
+            _job.set_deny_list(['ls', 'liulu'])
             job_id = _job.submit()
             self.logger.info(f'创建manifest任务成功, 任务ID: {job_id}')
 
