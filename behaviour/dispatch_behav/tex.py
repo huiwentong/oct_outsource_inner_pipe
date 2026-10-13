@@ -82,7 +82,7 @@ class Component(StepComponent):
                         "notify": ["gongshuai"],
                         "input_form": publish_options}
 
-            publish_json = write_temp_json(pub_data)
+            publish_json = write_temp_json(pub_data, "/srv/w/temp/temp_files")
             cmd = "rez-env PySide2 oct_publish -- batch_cli {}".format(publish_json)
             self.logger.info("submit to deadline cmd: {}".format(cmd))
             job_name = "Texture Outsource Recycle: {}".format(entity_name)

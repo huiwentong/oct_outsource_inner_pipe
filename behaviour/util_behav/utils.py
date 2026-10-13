@@ -19,15 +19,24 @@ def is_valid_file_name(file_path: str) -> bool:
     return True
 
 
-def write_temp_json(data):
-    with tempfile.NamedTemporaryFile(
-            mode="w",
-            suffix=".json",
-            delete=False,
-            encoding="utf-8"
-    ) as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    return f.name
+def write_temp_json(data, root_dir=None):
+    if root_dir is None:
+        root_dir = Path(tempfile.gettempdir())
+    else:
+        root_dir = Path(root_dir)
+
+    root_dir.mkdir(parents=True, exist_ok=True)
+    fd, path = tempfile.mkstemp(suffix=".json", dir=str(root_dir))
+
+    try:
+        with open(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        import os
+        os.close(fd)
+        raise
+
+    return to_win_path(path)
 
 
 def to_win_path(lux_path):
