@@ -88,7 +88,7 @@ class Component(StepComponent):
             job_name = "Texture Outsource Recycle: {}".format(entity_name)
             _job = CommandLineJob(name=job_name)
             _job.set_command(cmd)
-            _job.set_pool('user')
+            _job.set_pool('render')
             _job.set_priority(priority=100)
             _job.set_job_error_limit(number=3)
             _job.set_task_timeout_minutes(minutes='60')
