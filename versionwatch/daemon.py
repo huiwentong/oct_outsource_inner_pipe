@@ -14,6 +14,7 @@ from versionwatch.fs_watch import FsWatcher
 from versionwatch.hash_scan import HashScanner
 from versionwatch.pipeline import Pipeline
 from versionwatch.recorder import Recorder
+
 from versionwatch.warning_msg import send_warning_message
 from logger.core import watch_logger
 
