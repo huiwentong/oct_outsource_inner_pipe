@@ -33,7 +33,7 @@ from ui.collector.mock_data import (
 )
 from utils.db import Database
 from ui.collector.task_row import TaskRow
-from ui.collector.processor import Processor
+from ui.collector.processor import Processor, confirm_collect
 from ui.collector.worker import CollectWorker
 from ui.widgets import PopupStyledComboBox
 from utils.message import send_pack_collection_message
@@ -531,6 +531,9 @@ class CollectorWindow(QMainWindow):
 
         vendor = self.vendor_combo.currentText().strip()
         project_name_zh = project_name(self.project_id or "")
+        # 先确认外包方、任务和将授权的组, 避免选错外包方给了错误权限
+        if not confirm_collect(self, self.project_name or project_name_zh, vendor, [row.component for row in self._rows]):
+            return
         print("=" * 66)
         print(f"[开始抓包] 项目: {project_name_zh} | 外包方: {vendor}")
         print(f"[开始抓包] 共 {len(self._rows)} 项任务:")
@@ -548,6 +551,8 @@ class CollectorWindow(QMainWindow):
 
         self._collect_thread.started.connect(self._collect_worker.run)
         self._collect_worker.progress.connect(self._processor.set_progress)
+        self._collect_worker.file_progress.connect(self._processor.set_file_progress)
+        self._collect_worker.log.connect(self._processor.append_log)
         self._collect_worker.completed.connect(self._on_collect_completed)
         self._collect_worker.completed.connect(self._collect_thread.quit)
         self._collect_worker.completed.connect(self._collect_worker.deleteLater)
@@ -589,7 +594,7 @@ class CollectorWindow(QMainWindow):
             ret = send_pack_collection_message(msg, vendor_dingtalk)
             print(ret)
         else:
-            self._processor.mark_finished()
+            self._processor.mark_finished(ok=False)
             QMessageBox.critical(
                 self,
                 "抓包失败",

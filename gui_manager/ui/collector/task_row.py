@@ -5,18 +5,21 @@ from __future__ import annotations
 from typing import Any
 
 from dataclasses import fields
+from pathlib import Path
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFontDatabase
+from PySide6.QtCore import QSortFilterProxyModel, Qt
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFrame,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
-    QPlainTextEdit,
+    QTreeView,
     QVBoxLayout,
     QWidget,
     QPushButton,
@@ -45,22 +48,116 @@ def _component_text(component: StepComponent) -> str:
     return "\n".join(lines)
 
 
+def _tree_key(dst: str) -> tuple[list[str], str]:
+    """FTP 路径 → (分组层级, 叶子名称).
+
+    /oct/{项目}/{类型}/{实体}/{环节}/{剩余} → ([类型, 实体, 环节], 剩余)
+    /oct/{项目}/{类型}/{实体}/{文件}         → ([类型, 实体], 文件), 如 default_path.json
+    其他不符合约定的路径归到 "其他".
+    """
+    parts = dst.replace("\\", "/").strip("/").split("/")
+    if len(parts) >= 6 and parts[0] == "oct":
+        return parts[2:5], "/".join(parts[5:])
+    if len(parts) == 5 and parts[0] == "oct":
+        return parts[2:4], parts[4]
+    return ["其他"], dst
+
+
+def _build_model(transfer_folders: dict[str, str]) -> QStandardItemModel:
+    """按 类型 → 实体 → 环节 → 文件 建三列的树: 名称 / FTP 路径 / 本地来源."""
+    model = QStandardItemModel()
+    model.setHorizontalHeaderLabels(["名称", "FTP 路径", "本地来源"])
+    groups: dict[tuple[str, ...], QStandardItem] = {}
+    counts: dict[tuple[str, ...], int] = {}
+    # core 里手动选的额外文件和旧版 default_path.json 用 str(Path(...)) 拼 FTP 路径, Windows 下是 \, 统一成 /
+    # (上传时 FtpClient 也会做同样的替换)
+    items = sorted(((src, dst.replace("\\", "/")) for src, dst in transfer_folders.items()), key=lambda kv: kv[1])
+    for src, dst in items:
+        levels, leaf = _tree_key(dst)
+        project_root = "/".join(dst.split("/")[:3])  # /oct/{项目}
+        parent = model.invisibleRootItem()
+        for i in range(len(levels)):
+            key = tuple(levels[: i + 1])
+            if key not in groups:
+                groups[key] = QStandardItem(levels[i])
+                ftp_dir = "" if levels == ["其他"] else f"{project_root}/{'/'.join(key)}"
+                parent.appendRow([groups[key], QStandardItem(ftp_dir), QStandardItem()])
+            counts[key] = counts.get(key, 0) + 1
+            parent = groups[key]
+        # ponytail: 目录只显示一个节点、不展开, 避免打开弹窗时扫描大目录
+        is_dir = Path(src).is_dir()
+        name = QStandardItem(leaf + ("/" if is_dir else ""))
+        name.setToolTip("整个目录递归上传" if is_dir else "文件")
+        ftp = QStandardItem(dst)
+        ftp.setToolTip(dst)
+        source = QStandardItem(src)
+        source.setToolTip(src)
+        parent.appendRow([name, ftp, source])
+    for key, item in groups.items():  # 分组后面标出条目数
+        item.setText(f"{item.text()}  ({counts[key]})")
+    return model
+
+
 def _show_component(parent: QWidget | None, component: StepComponent) -> None:
-    """可滚动、可缩放的只读弹窗，替代内容过多会超出屏幕的 QMessageBox。"""
+    """抓包信息弹窗: 顶部概要, 下方按 类型 → 实体 → 环节 → 文件 的树, 可搜索、可复制完整清单."""
     dialog = QDialog(parent)
     dialog.setWindowTitle(f"{component.entity} · {component.name} 抓包信息")
-    dialog.resize(960, 600)
+    dialog.resize(1100, 680)
 
-    text = QPlainTextEdit(_component_text(component))
-    text.setReadOnly(True)
-    text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
-    text.setFont(QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont))
+    summary = QLabel(
+        f"<b>{component.project} / {component.entity_type} / {component.entity} · {component.step}</b>"
+        f"　上传清单共 {len(component.transfer_folders)} 项<br>"
+        f"依赖实体: {', '.join(component.rely_assets) or '(空)'}<br>"
+        f"依赖环节: {', '.join(component.rely_steps) or '(空)'}"
+    )
+    summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    summary.setWordWrap(True)
+
+    search = QLineEdit()
+    search.setPlaceholderText("搜索文件名、FTP 路径或本地路径, 如 dasheng / .usda / /oct/mk2/shot")
+    search.setClearButtonEnabled(True)
+
+    proxy = QSortFilterProxyModel(dialog)
+    proxy.setSourceModel(_build_model(component.transfer_folders))
+    proxy.setRecursiveFilteringEnabled(True)  # 子节点命中时保留上级
+    proxy.setFilterKeyColumn(-1)  # 三列都搜
+    proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
+    tree = QTreeView()
+    tree.setModel(proxy)
+    tree.setUniformRowHeights(True)
+    tree.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
+    # 隔行变色, 颜色沿用 ui/style.py 列表的配色
+    tree.setAlternatingRowColors(True)
+    tree.setStyleSheet(
+        "QTreeView { background: #ffffff; alternate-background-color: #eef2f7; }"
+        "QTreeView::item:hover { background: #e2e8f0; }"
+        "QTreeView::item:selected { background: #dbeafe; color: #1d4ed8; }"
+    )
+    tree.header().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+    tree.header().resizeSection(0, 300)
+    tree.header().resizeSection(1, 460)
+    tree.expandToDepth(0)  # 默认只展开类型, 列出实体; 实体下的内容点击再展开
+
+    def on_search(text: str) -> None:
+        proxy.setFilterFixedString(text.strip())
+        tree.expandAll() if text.strip() else tree.expandToDepth(0)
+
+    search.textChanged.connect(on_search)
+
+    copy_btn = QPushButton("复制清单")
+    copy_btn.setToolTip("复制为纯文本, 方便发给别人")
+    copy_btn.clicked.connect(lambda: QApplication.clipboard().setText(_component_text(component)))
 
     buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+    buttons.button(QDialogButtonBox.StandardButton.Close).setText("关闭")
+    buttons.addButton(copy_btn, QDialogButtonBox.ButtonRole.ActionRole)
     buttons.rejected.connect(dialog.reject)
 
     layout = QVBoxLayout(dialog)
-    layout.addWidget(text)
+    layout.addWidget(summary)
+    layout.addWidget(search)
+    layout.addWidget(tree, 1)
     layout.addWidget(buttons)
     dialog.exec()
 
