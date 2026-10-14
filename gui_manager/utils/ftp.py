@@ -78,6 +78,7 @@ class FtpClient:
             print(f"文件 {local_path} 与远程 {remote_path} 相同，跳过上传。")
             return
         with Path(local_path).open("rb") as fh:
+            print(f"上传: {local_path} -> {remote_path}")
             self._ftp.storbinary(f"STOR {remote_path}", fh)
 
 
@@ -91,7 +92,6 @@ class FtpClient:
             remote_path = f"{remote_dir}/{path.name}"
 
             if path.is_file():
-                print(f"上传: {path} -> {remote_path}")
                 self.upload_file(path, remote_path)
 
             elif path.is_dir():

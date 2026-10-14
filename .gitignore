@@ -24,4 +24,6 @@ GEMINI.md
 .gitnexus/
 
 # 本地开发计划
-ani_collector_plan.md
+ani_collector_*
+project_overview.html
+known_issues.html

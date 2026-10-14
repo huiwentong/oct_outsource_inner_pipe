@@ -1,4 +1,4 @@
-"""collector 启动入口: python collector.py"""
+"""collector 启动入口: uv run collector"""
 
 from PySide6.QtWidgets import QApplication
 

@@ -12,6 +12,7 @@
 ===========================================
 """
 import shotgun_api3
+from functools import lru_cache
 import threading
 import gc
 import getpass
@@ -126,6 +127,51 @@ def get_asset_type(asset_name: str, project_name: str) -> str|None:
     asset = sg.find_one('Asset', [['project', 'name_is', project_name],['code', 'is', asset_name]], ['sg_asset_type'])
 
     return asset.get('sg_asset_type') if asset else None
+
+
+# 注意: SG 和 USD 结果在本次运行内缓存, 工具开着期间有新发布要重启才能看到
+@lru_cache(maxsize=None)
+def latest_publish(entity: str, task: str, project: str) -> dict | None:
+    """查最新 Publish 版本, 和 oct ORM 的 Task.latest_published_version 逻辑一致.
+
+    Args:
+        entity (str): 资产或镜头名
+        task (str): SG 任务名, 如 ``rigging`` / ``rough_layout``
+        project (str): 项目名
+
+    Returns:
+        dict | None: SG Version, 含 ``sg_path_to_v_folder``, ``sg_path_to_geometry``; 没有发布返回 None
+    """
+    return FastSg().client.find_one("Version",
+        [
+            ["entity", "name_is", entity],
+            ["project", "name_is", project],
+            ["sg_task", "name_is", task],
+            ["sg_version_type", "is", "Publish"],
+        ],
+        ["sg_path_to_v_folder", "sg_path_to_geometry"],
+        order=[{"field_name": "id", "direction": "desc"}],
+    )
+
+
+@lru_cache(maxsize=None)
+def shot_assets(shot: str, project: str) -> tuple[tuple[str, str], ...]:
+    """查镜头关联的资产.
+
+    Args:
+        shot (str): 镜头名, 如 ``s990050``
+        project (str): 项目名
+
+    Returns:
+        tuple[tuple[str, str], ...]: ((资产名, sg_asset_type), ...); 镜头不存在或无资产返回空元组
+    """
+    sg = FastSg().client
+    data = sg.find_one("Shot", [["code", "is", shot], ["project", "name_is", project]], ["assets"])
+    names = [a["name"] for a in (data or {}).get("assets") or []]
+    if not names:
+        return ()
+    found = sg.find("Asset", [["code", "in", names], ["project", "name_is", project]], ["code", "sg_asset_type"])
+    return tuple((a["code"], a["sg_asset_type"]) for a in found)
 
 
 if __name__ == '__main__':

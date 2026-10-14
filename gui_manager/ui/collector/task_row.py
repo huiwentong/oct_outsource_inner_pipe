@@ -4,21 +4,65 @@ from __future__ import annotations
 
 from typing import Any
 
+from dataclasses import fields
+
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import (
     QCheckBox,
+    QDialog,
+    QDialogButtonBox,
     QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPlainTextEdit,
     QVBoxLayout,
     QWidget,
     QPushButton,
     QMessageBox
 )
 
-from components.core import FieldSpec, StepComponent, inspect_component
+from components.core import FieldSpec, StepComponent
 from ui.widgets import PopupStyledComboBox
+
+
+def _component_text(component: StepComponent) -> str:
+    """组件信息转成多行文本，上传清单按 FTP 路径排序、一项一行。"""
+    lines = []
+    for f in fields(component):
+        v = getattr(component, f.name)
+        if isinstance(v, QFrame):
+            continue
+        if isinstance(v, dict):
+            lines.append(f"{f.name}: 共 {len(v)} 项")
+            for src, dst in sorted(v.items(), key=lambda kv: kv[1]):
+                lines += [f"  {dst}", f"      ← {src}"]
+        elif isinstance(v, list):
+            lines.append(f"{f.name}: {', '.join(map(str, v)) or '（空）'}")
+        else:
+            lines.append(f"{f.name}: {v}")
+    return "\n".join(lines)
+
+
+def _show_component(parent: QWidget | None, component: StepComponent) -> None:
+    """可滚动、可缩放的只读弹窗，替代内容过多会超出屏幕的 QMessageBox。"""
+    dialog = QDialog(parent)
+    dialog.setWindowTitle(f"{component.entity} · {component.name} 抓包信息")
+    dialog.resize(960, 600)
+
+    text = QPlainTextEdit(_component_text(component))
+    text.setReadOnly(True)
+    text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+    text.setFont(QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont))
+
+    buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+    buttons.rejected.connect(dialog.reject)
+
+    layout = QVBoxLayout(dialog)
+    layout.addWidget(text)
+    layout.addWidget(buttons)
+    dialog.exec()
 
 
 
@@ -76,7 +120,7 @@ class TaskRow:
         path_label.setObjectName("rowPath")
 
         check_button = QPushButton('点击检查')
-        check_button.clicked.connect(lambda: QMessageBox.information(parent, 'component信息', inspect_component(component)))
+        check_button.clicked.connect(lambda: _show_component(parent, component))
 
         top.addWidget(entity_label)
         top.addWidget(badge)
