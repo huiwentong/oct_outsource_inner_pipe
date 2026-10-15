@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QApplication,
@@ -22,6 +24,27 @@ from PySide6.QtWidgets import (
 from ui.usermanager import services
 from ui.window_utils import keep_window_on_screen, load_app_icon
 
+# 用户名同时是服务器上的 Linux 账号名和回传目录名 /srv/ftp/{用户名}:
+# 中文、空格、特殊符号会让服务器建账号失败; 与已有目录或权限组同名会占用 / 冲突 (如 oct 会接管整个项目目录)
+_NAME_RE = re.compile(r"[a-z][a-z0-9_]{1,31}")
+# ponytail: 只列 FTP 根目录下的固定目录和环节组; 项目名、实体名会随时增加, 需要服务端校验才能挡全
+_RESERVED_NAMES = {
+    "oct", "root", "oip_admin", "new",
+    "mod", "tex", "rig", "fur", "asb", "lay", "blk", "ani", "cfx", "efx", "lgt", "cmp",
+}
+
+
+def _name_error(name: str) -> str:
+    """用户名格式不合法时返回提示, 合法或为空 (由必填校验处理) 返回空字符串。"""
+    if not name:
+        return ""
+    if not _NAME_RE.fullmatch(name):
+        return "用户名只能包含小写字母、数字和下划线，不能以数字开头，长度 2–32 位"
+    if name in _RESERVED_NAMES:
+        return f"用户名 {name} 与系统目录或权限组重名，请换一个"
+    return ""
+
+
 # (字段key, 显示名, 是否必填, 输入提示, 详细说明)
 FIELD_SPECS: list[tuple[str, str, bool, str, str]] = [
     (
@@ -29,7 +52,7 @@ FIELD_SPECS: list[tuple[str, str, bool, str, str]] = [
         "用户名 name",
         True,
         "例如：starlight_cg",
-        "外包方登录名：用于登录 FTP 与系统，创建后不可修改。",
+        "外包方登录名：用于登录 FTP 与系统，创建后不可修改。只能用小写字母、数字和下划线，不能以数字开头，2–32 位。",
     ),
     (
         "description",
@@ -200,6 +223,9 @@ class UserManagerWindow(QMainWindow):
             value = self._inputs[key].text().strip()
             if not value:
                 errors.append(f"请填写必填项：{key}")
+        name_error = _name_error(self._inputs["name"].text().strip())
+        if name_error:
+            errors.insert(0, name_error)  # 输入用户名时优先提示格式问题
         email = self._inputs["email"].text().strip()
         if email and "@" not in email:
             errors.append("邮箱格式不正确，请检查 email")
