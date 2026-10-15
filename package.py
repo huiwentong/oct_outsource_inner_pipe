@@ -8,7 +8,8 @@ requires = [
     'PySide6',
     'PyYAML',
     'requests',
-    'shotgun_api3'
+    'shotgun_api3',
+    'usd_core',
 ]
 
 
