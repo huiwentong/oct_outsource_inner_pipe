@@ -60,13 +60,19 @@ services:
       - ftpdata:/srv/ftp
       - ftplogs:/var/log/vsftpd
       - outsourcelogs:/var/log/outsource
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/get_user', timeout=2).close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
-  
+
   behavior:
     build:
       context: .
       dockerfile: docker/behaviour.Dockerfile
-    environment: 
+    environment:
       STATE_DIR: /var/lib/behaviour
       LOG_DIR: /var/log/outsource
       BEHAVIOR_LOG_LEVEL: INFO
@@ -77,6 +83,8 @@ services:
       - "8001:8001"
     depends_on:
       postgres:
+        condition: service_healthy
+      vsftpd:
         condition: service_healthy
     volumes:
       - ftpdata:/srv/ftp
