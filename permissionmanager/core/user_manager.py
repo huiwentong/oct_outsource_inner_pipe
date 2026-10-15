@@ -707,9 +707,9 @@ class FTPUserManager:
         target = str(path_obj)
 
         if recursive:
-            cmd = ["setfacl", "-R", "-m", f"g:{group}:{chmod}", target]
+            cmd = ["setfacl", "-R", "-m", f"g:{group}:{chmod},o:--x", target]
         else:
-            cmd = ["setfacl", "-m", f"g:{group}:{chmod}", target]
+            cmd = ["setfacl", "-m", f"g:{group}:{chmod},o:--x", target]
 
         subprocess.run(
             cmd,
@@ -730,7 +730,7 @@ class FTPUserManager:
                 "setfacl",
                 "-d",
                 "-m",
-                f"g:{group}:{chmod}",
+                f"g:{group}:{chmod},o:--x",
                 target,
             ]
 
