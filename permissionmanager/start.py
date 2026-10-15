@@ -157,6 +157,15 @@ def refresh_file_acs():
         check=True,
     )
     base = Path("/srv/ftp/oct")
+    subprocess.run(
+        [
+            'setfacl',
+            '-m',
+            f'o:r-x',
+            str(base)
+        ],
+        check=True,
+    )
 
     for root, dirs, files in os.walk(base):
         path = Path(root)
