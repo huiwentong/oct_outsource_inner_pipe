@@ -8,6 +8,11 @@ from utils.shotgun import latest_publish
 from utils.usd import usd_deps
 
 
+def _is_lay_version_usda(path: Path, shot_root: Path) -> bool:
+    """是否为 {镜头}/lay/{版本目录}/{版本目录}.usda, 如 lay/s990080.lay.rough_layout.v001/s990080.lay.rough_layout.v001.usda."""
+    return path.suffix == ".usda" and path.stem == path.parent.name and path.parent.parent == shot_root / "lay"
+
+
 @lru_cache(maxsize=None)
 def collect_shot(shot: str, project: str) -> tuple[frozenset[str], tuple[str, ...]]:
     """收集镜头文件: <shot>.asb_all.usda / <shot>.lay.usda 及其依赖, 
@@ -37,9 +42,10 @@ def collect_shot(shot: str, project: str) -> tuple[frozenset[str], tuple[str, ..
     files = set(_existing([asb_all_usda, root / "lay" / f"{shot}.lay.usda"], notes, shot))
     if asb_all_usda.exists():
         deps, unresolved = usd_deps(str(asb_all_usda))
-        # 只补场景资产; 镜头目录下的依赖 (lay.usda 及其引用的 rough_layout 版本 usda) 不发,
-        # lay.usda 已单独上传, 仅供外包检查工具读取, 不需要它的依赖
-        files |= {f for f in deps if not Path(f).is_relative_to(root)}
+        # 镜头目录外的依赖 (场景资产) 全部补齐; 镜头目录下只额外保留 rough_layout 版本 usda,
+        # 即 lay/{版本目录}/{版本目录}.usda: asb_all 经 lay.usda 引用它, 里面只有各资产的 active 开关,
+        # 缺了会报 Could not open asset 警告, 场景被 layout 关掉时也无法还原. 版本目录下的 component 等仍不发
+        files |= {f for f in deps if not Path(f).is_relative_to(root) or _is_lay_version_usda(Path(f), root)}
         notes += [f"解析不到: {u}" for u in unresolved]  # 与 lay 同格式, 同一缺失只显示一次
     asb_all_no_tex_usda = root / "asb" / f"{shot}.asb_all.no_tex.usda"
     if asb_all_no_tex_usda.exists():
