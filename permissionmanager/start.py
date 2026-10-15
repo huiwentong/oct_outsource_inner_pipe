@@ -169,58 +169,58 @@ def refresh_file_acs():
             if not FTPUserManager.group_exists(group):
                 FTPUserManager.create_group(group, 'docker init auto create')
             
-            if not acl_has_group(path, group):
-                subprocess.run(
-                    [
-                        'setfacl',
-                        '-m',
-                        f'g:{group}:r-x,o:--x',
-                        str(path)
-                    ],
-                    check=True,
-                )
+            # if not acl_has_group(path, group):
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{group}:r-x,o:--x',
+                    str(path)
+                ],
+                check=True,
+            )
 
         elif len(parts) == 3:
             entity = parts[2]
             if not FTPUserManager.group_exists(entity):
                 FTPUserManager.create_group(entity, 'docker init auto create')
 
-            if not acl_has_group(path, entity):
-                subprocess.run(
-                    [
-                        'setfacl',
-                        '-m',
-                        f'g:{entity}:r-x,o:--x',
-                        str(path)
-                    ],
-                    check=True,
-                )
+            # if not acl_has_group(path, entity):
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{entity}:r-x,o:--x',
+                    str(path)
+                ],
+                check=True,
+            )
             
         elif len(parts) == 4:
             step = parts[3]
             if not FTPUserManager.group_exists(step):
                 FTPUserManager.create_group(step, 'auto create')
             
-            if not acl_has_group(path, step):
-                subprocess.run(
-                    [
-                        'setfacl',
-                        '-m',
-                        f'g:{step}:r-x,o:--x',
-                        str(path)
-                    ],
-                    check=True,
-                )
-                subprocess.run(
-                    [
-                        'setfacl',
-                        '-d',
-                        '-m',
-                        f'g:{step}:r-x,o:--x',
-                        str(path)
-                    ],
-                    check=True,
-                )
+            # if not acl_has_group(path, step):
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-m',
+                    f'g:{step}:r-x,o:--x',
+                    str(path)
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    'setfacl',
+                    '-d',
+                    '-m',
+                    f'g:{step}:r-x,o:--x',
+                    str(path)
+                ],
+                check=True,
+            )
         else:
             continue
 
