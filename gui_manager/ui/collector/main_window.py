@@ -530,6 +530,21 @@ class CollectorWindow(QMainWindow):
                 return
 
         vendor = self.vendor_combo.currentText().strip()
+        # 下拉框可以手动输入, 先确认账号存在, 否则建完组后入组时服务端才报 409 "用户不存在"
+        try:
+            vendor_names = self.db.get_user_names()
+        except Exception as exc:
+            QMessageBox.warning(self, "无法获取外包方账号", f"查询 FTP 账号列表失败，请检查网络后重试：\n{exc}")
+            return
+        if vendor not in vendor_names:
+            QMessageBox.warning(
+                self,
+                "外包方账号不存在",
+                f"「{vendor}」不是已有的 FTP 账号，请从下拉列表中选择。\n\n"
+                f"现有账号：{', '.join(vendor_names) or '（无）'}\n\n"
+                "如果是新的外包方，请先用 usermanager 创建账号。",
+            )
+            return
         project_name_zh = project_name(self.project_id or "")
         # 先确认外包方、任务和将授权的组, 避免选错外包方给了错误权限
         if not confirm_collect(self, self.project_name or project_name_zh, vendor, [row.component for row in self._rows]):
