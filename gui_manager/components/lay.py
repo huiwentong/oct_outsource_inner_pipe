@@ -153,13 +153,13 @@ class LayComponent(StepComponent):
         self._refresh()
 
     def _collect(self):
-        assets = shot_assets(self.entity, self.project)
+        assets = shot_assets(self.entity, self.project)  # 镜头资产 + 所属场次资产
         if not assets:
-            self.notes.append(f'{self.entity} 在 Shotgun 上没有关联资产')
-        for name, asset_type in assets:
+            self.notes.append(f'{self.entity} 及其场次在 Shotgun 上都没有关联资产')
+        for name, asset_type, from_sequence in assets:
             files, notes = collect_asset(name, asset_type, self.project)
             self._add(files)
-            self.notes += notes
+            self.notes += [f'(场次资产) {n}' for n in notes] if from_sequence else notes
             if asset_type in RIG_TYPES:
                 self._rig_assets.append(name)
 

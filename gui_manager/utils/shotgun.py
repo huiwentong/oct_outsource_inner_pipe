@@ -154,24 +154,61 @@ def latest_publish(entity: str, task: str, project: str) -> dict | None:
     )
 
 
+def _asset_types(names: list[str], project: str) -> tuple[tuple[str, str], ...]:
+    """按资产名批量查 sg_asset_type, 返回 ((资产名, sg_asset_type), ...)."""
+    if not names:
+        return ()
+    found = FastSg().client.find("Asset", [["code", "in", names], ["project", "name_is", project]], ["code", "sg_asset_type"])
+    return tuple((a["code"], a["sg_asset_type"]) for a in found)
+
+
 @lru_cache(maxsize=None)
-def shot_assets(shot: str, project: str) -> tuple[tuple[str, str], ...]:
-    """查镜头关联的资产.
+def sequence_assets(sequence_id: int, project: str) -> tuple[tuple[str, str], ...]:
+    """查场次关联的资产. 按场次缓存, 同一场次的多个镜头只查一次.
+
+    Args:
+        sequence_id (int): Sequence 的 id
+        project (str): 项目名
+
+    Returns:
+        tuple[tuple[str, str], ...]: ((资产名, sg_asset_type), ...); 场次无资产返回空元组
+    """
+    data = FastSg().client.find_one("Sequence", [["id", "is", sequence_id]], ["assets"])
+    return _asset_types([a["name"] for a in (data or {}).get("assets") or []], project)
+
+
+@lru_cache(maxsize=None)
+def shot_assets(shot: str, project: str) -> tuple[tuple[str, str, bool], ...]:
+    """查镜头关联的资产, 以及镜头所属场次关联的资产.
+
+    制片开新场次时通常只在 Sequence 上关联资产, 不会给每个镜头都关联, 所以两边都要收.
 
     Args:
         shot (str): 镜头名, 如 ``s990050``
         project (str): 项目名
 
     Returns:
-        tuple[tuple[str, str], ...]: ((资产名, sg_asset_type), ...); 镜头不存在或无资产返回空元组
+        tuple[tuple[str, str, bool], ...]: ((资产名, sg_asset_type, 是否仅来自场次), ...),
+            按资产名去重, 镜头资产在前; 镜头不存在或两边都无资产返回空元组
     """
-    sg = FastSg().client
-    data = sg.find_one("Shot", [["code", "is", shot], ["project", "name_is", project]], ["assets"])
-    names = [a["name"] for a in (data or {}).get("assets") or []]
-    if not names:
-        return ()
-    found = sg.find("Asset", [["code", "in", names], ["project", "name_is", project]], ["code", "sg_asset_type"])
-    return tuple((a["code"], a["sg_asset_type"]) for a in found)
+    data = FastSg().client.find_one(
+        "Shot", [["code", "is", shot], ["project", "name_is", project]], ["assets", "sg_sequence"]
+    ) or {}
+    linked_to_shot = _asset_types([a["name"] for a in data.get("assets") or []], project)
+    sequence = data.get("sg_sequence")
+    linked_to_sequence = sequence_assets(sequence["id"], project) if sequence else ()
+
+    result = []
+    for name, asset_type in linked_to_shot:
+        result.append((name, asset_type, False))
+
+    shot_asset_names = {name for name, _ in linked_to_shot}
+    for name, asset_type in linked_to_sequence:
+        if name in shot_asset_names:  # 镜头上已关联过, 不重复收
+            continue
+        result.append((name, asset_type, True))
+
+    return tuple(result)  # 用 tuple 而不是 list: 结果会被 lru_cache 缓存共用, 不能被调用方修改
 
 
 if __name__ == '__main__':
