@@ -14,6 +14,8 @@ services:
       POSTGRES_DB: outsource_inner_pipe
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin  -d outsource_inner_pipe"]
       interval: 5s
@@ -36,6 +38,8 @@ services:
       - ftplogs:/var/log/vsftpd
       - vwstate:/var/lib/versionwatch
       - outsourcelogs:/var/log/outsource
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,6 +64,8 @@ services:
       - ftpdata:/srv/ftp
       - ftplogs:/var/log/vsftpd
       - outsourcelogs:/var/log/outsource
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/get_user', timeout=2).close()"]
       interval: 5s
@@ -93,6 +99,8 @@ services:
       - bhstate:/var/lib/behaviour
       - /mnt/I:/srv/i
       - /mnt/W:/srv/w
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: [
         "CMD",
