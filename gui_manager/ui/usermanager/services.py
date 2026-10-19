@@ -6,7 +6,7 @@ TODO(后续补充): 以下为演示用的 mock 逻辑，
 """
 
 from __future__ import annotations
-from utils.message import send_simple_message
+from utils.message import send_simple_message, send_email_with_alibaba
 from typing import Any
 import getpass
 from utils.permissionmanager import (
@@ -121,4 +121,7 @@ def continue_after_success(data: dict[str, Any]) -> None:
         'frp_address': data['frp_address'],
         'frp_home': data['frp_home'],
     }
-    send_simple_message(m_data, '新账户创建成功！', data['ding_id'])
+    if data['ding_id']:
+        send_simple_message(m_data, '新账户创建成功！', data['ding_id'])
+    if data['email']:
+        send_email_with_alibaba('新账户创建成功！\n'+str(m_data), {'name': data['name'],'email': data['email']})

@@ -36,7 +36,7 @@ from ui.collector.task_row import TaskRow
 from ui.collector.processor import Processor, confirm_collect
 from ui.collector.worker import CollectWorker
 from ui.widgets import PopupStyledComboBox
-from utils.message import send_pack_collection_message
+from utils.message import send_pack_collection_message, send_email_with_alibaba
 import getpass
 from ui.window_utils import keep_window_on_screen, load_app_icon
 
@@ -590,7 +590,7 @@ class CollectorWindow(QMainWindow):
                 "抓包完成",
                 f"已执行 {done} 项抓包任务。\n",
             )
-            vendor_dingtalk = self.db.get_user_dingid(self.vendor_combo.currentText().strip())
+            vendor = self.db.get_user_contact(self.vendor_combo.currentText().strip())
             description = ''
             assets = ''
             steps = set()
@@ -605,9 +605,12 @@ class CollectorWindow(QMainWindow):
                 'rely_steps': ', '.join(list(steps)),
                 'user': getpass.getuser(),
             }
-            print(f'准备发送抓包完成消息给钉钉: {msg} {vendor_dingtalk}')
-            ret = send_pack_collection_message(msg, vendor_dingtalk)
-            print(ret)
+            if vendor.get('dingtalk_id'):
+                ret = send_pack_collection_message(msg, vendor['dingtalk_id'])
+                print(ret)
+            if vendor.get('email')
+                ret = send_email_with_alibaba(msg, {'name': vendor['name'], 'email': vendor['email']})
+                print(ret)
         else:
             self._processor.mark_finished(ok=False)
             QMessageBox.critical(

@@ -27,6 +27,7 @@ STEP_MAP = {
 class ThreadSafeShotgun:
     def __init__(self, base_url=None, script_name=None, api_key=None, shotgun_ins=None,  **kwargs):
         self.lock = threading.Lock()
+        self.max_try_times = 5
         print("Initializing Shotgun connection...")
         if shotgun_ins:
             self._sg = shotgun_ins
@@ -35,28 +36,69 @@ class ThreadSafeShotgun:
 
 
     def find(self, entity_type, filters, fields, **kwargs):
+        try_times = 0
+        errors = ''
         with self.lock:
-            try:
-                result = self._sg.find(entity_type, filters, fields, **kwargs)
-                return result
-            except Exception as e:
-                raise
+            while try_times < self.max_try_times:
+                try:
+                    result = self._sg.find(entity_type, filters, fields, **kwargs)
+                    return result
+                except:
+                    errors += f'error time {try_times}: {traceback.format_exc()}\n'
+                    try_times += 1
+            raise RuntimeError(errors)
+
 
     def create(self, *arges, **kwargs):
+        try_times = 0
+        errors = ''
         with self.lock:
-            return self._sg.create(*arges, **kwargs)
+            while try_times < self.max_try_times:
+                try:
+                    return self._sg.create(*arges, **kwargs)
+                except:
+                    errors += f'error time {try_times}: {traceback.format_exc()}\n'
+                    try_times += 1
+            raise RuntimeError(errors)
+
+
 
     def update(self, *arges, **kwargs):
+        try_times = 0
+        errors = ''
         with self.lock:
-            return self._sg.update(*arges, **kwargs)
+            while try_times < self.max_try_times:
+                try:
+                    return self._sg.update(*arges, **kwargs)
+                except:
+                    errors += f'error time {try_times}: {traceback.format_exc()}\n'
+                    try_times += 1
+            raise RuntimeError(errors)
 
     def delete(self, *arges, **kwargs):
+        try_times = 0
+        errors = ''
         with self.lock:
-            return self._sg.delete(*arges, **kwargs)
+            while try_times < self.max_try_times:
+                try:
+                    return self._sg.delete(*arges, **kwargs)
+                except:
+                    errors += f'error time {try_times}: {traceback.format_exc()}\n'
+                    try_times += 1
+            raise RuntimeError(errors)
+
 
     def find_one(self, *arges, **kwargs):
+        try_times = 0
+        errors = ''
         with self.lock:
-            return self._sg.find_one(*arges, **kwargs)
+            while try_times < self.max_try_times:
+                try:
+                    return self._sg.find_one(*arges, **kwargs)
+                except:
+                    errors += f'error time {try_times}: {traceback.format_exc()}\n'
+                    try_times += 1
+            raise RuntimeError(errors)
 
 
 

@@ -104,7 +104,7 @@ def get_token_from_alibaba():
 def send_email_with_alibaba(msg=None, user={}):
     global token
     token = get_token_from_alibaba()
-    email = 'huiwentong@octmedia.com'  # 例如：test@yourcompany.com
+    email = 'huiwentong@octmedia.com'
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
