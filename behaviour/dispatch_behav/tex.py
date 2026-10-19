@@ -52,12 +52,11 @@ class Component(StepComponent):
     def copy_to_w(self):
         super().copy_to_w()
         root = Path(self.event.dst_path) / self.event.version
-        root = to_win_path(root)
         manifest_data = self.get_manifest_data()
         publish_options = manifest_data['publish_options']
         maya_file = publish_options['ma_file']
         maya_file = str(Path(root) / maya_file)
-        execute_relinker(maya_file=maya_file, image_root=str(root))
+        execute_relinker(maya_file=maya_file, image_root=str(to_win_path(root)))
 
     def publish_to_ddline(self):
         try:
