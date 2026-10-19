@@ -4,6 +4,7 @@ from behaviour.utils.queueevent import Event
 from behaviour.utils.deadline import CommandLineJob
 from behaviour.utils.shotgun_method import find_task
 from behaviour.dispatch_behav.core import StepComponent
+from behaviour.utils.maya_path_relinker import execute_relinker
 from behaviour.util_behav.utils import write_temp_json, to_win_path, is_valid_project_name, is_valid_file_name
 
 class Component(StepComponent):
@@ -48,12 +49,20 @@ class Component(StepComponent):
             self.logger.error(e)
             return e
 
+    def copy_to_w(self):
+        super().copy_to_w()
+        root = Path(self.event.dst_path) / self.event.version
+        root = to_win_path(root)
+        manifest_data = self.get_manifest_data()
+        publish_options = manifest_data['publish_options']
+        maya_file = publish_options['ma_file']
+        maya_file = str(Path(root) / maya_file)
+        execute_relinker(maya_file=maya_file, image_root=str(root))
+
     def publish_to_ddline(self):
         try:
             root = Path(self.event.dst_path) / self.event.version
             root = to_win_path(root)
-            self.logger.info("windows root: {}".format(root))
-            self.logger.info("linux root: {}".format(Path(self.event.dst_path) / self.event.version))
             manifest_data = self.get_manifest_data()
 
             publish_options = manifest_data['publish_options']
