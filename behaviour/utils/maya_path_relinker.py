@@ -28,8 +28,6 @@ def maya_path(value):
 class AssetIndex:
     def __init__(self, root):
         self.root = Path(root).expanduser().resolve()
-        if not self.root.is_dir():
-            raise ValueError("image_root 目录不存在: {}".format(self.root))
         self.files, self.by_name = [], collections.defaultdict(list)
         for base, dirs, names in os.walk(self.root):
             dirs[:] = [d for d in dirs if d not in {".git", "__pycache__"}]
