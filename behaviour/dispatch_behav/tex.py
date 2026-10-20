@@ -4,7 +4,7 @@ from behaviour.utils.queueevent import Event
 from behaviour.utils.deadline import CommandLineJob
 from behaviour.utils.shotgun_method import find_task
 from behaviour.dispatch_behav.core import StepComponent
-from behaviour.util_behav.utils import write_temp_json, to_win_path, is_valid_project_name, is_valid_file_name
+from behaviour.util_behav.utils import write_temp_json, to_win_path, is_valid_file_name
 
 class Component(StepComponent):
     def __init__(self, event: Event) -> None:
@@ -16,25 +16,20 @@ class Component(StepComponent):
             manifest_data:dict = json.load(f)
         return manifest_data
 
-
     def check_extra(self):
         try:
             manifest_data = self.get_manifest_data()
             upload_files = manifest_data['upload_files']
-            publish_options = manifest_data['publish_options']
-            ma_file = publish_options['ma_file']
-            entity_name = manifest_data['entity_name']
-            task_step = manifest_data['task_step']
-            task_name = manifest_data['task_name']
-
-            name_pattern = "{}.{}.{}".format(entity_name, task_step, task_name)
-            if not is_valid_project_name(ma_file, name_pattern):
-                return "maya 文件的命名不规范！ 正确格式为：{}.vxxx.(ma|mb)".format(name_pattern)
-
             assert isinstance(upload_files, list), \
                 "manifest json文件中 ‘upload_files’ 的值应该是个列表：例：‘upload_files’: ['test01.png', 'test02.png']"
 
+            publish_options = manifest_data['publish_options']
+            ma_file = publish_options['ma_file']
+
             invalid_upload_files = []
+            if not is_valid_file_name(ma_file):
+                invalid_upload_files.append(ma_file)
+
             for file in upload_files:
                 if is_valid_file_name(file):
                     continue
@@ -47,7 +42,6 @@ class Component(StepComponent):
         except Exception as e:
             self.logger.error(e)
             return e
-
 
     def publish_to_ddline(self):
         try:
@@ -62,7 +56,6 @@ class Component(StepComponent):
             publish_options['src_tex_files'] = [str(Path(root) / i) for i in src_tex_files] if src_tex_files else ["None"]
 
             publish_type = 'Publish' if maya_file else 'Dailies'
-            version_num = Path(maya_file).stem.split(".")[-1]
 
             entity_name = manifest_data['entity_name']
             asset_type = manifest_data['type']
@@ -72,7 +65,7 @@ class Component(StepComponent):
 
             pub_data = {"task_id": task["id"],
                         "dcc_file": str(Path(root)/ maya_file),
-                        "version_num": version_num,
+                        "version_num": "",
                         "user": "gongshuai",
                         "comment": manifest_data['comment'],
                         "publish_type": publish_type,
