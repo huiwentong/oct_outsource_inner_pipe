@@ -76,7 +76,7 @@ class Component(StepComponent):
             cmd = ('rez-env --paths "//tools02.ds.com/pipeline/packages/int;//tools02.ds.com/pipeline/packages/ext;//tools02.ds.com/pipeline/packages" '
                    'PySide2 oct_publish -- batch_cli {}').format(publish_json)
             self.logger.info("submit to deadline cmd: {}".format(cmd))
-            job_name = "Model Outsource Recycle: {}".format(entity_name)
+            job_name = "Fur Outsource Recycle: {} {} outsource version:{}".format(entity_name, publish_type, self.event.version)
             _job = CommandLineJob(name=job_name)
             _job.set_command(cmd)
             _job.set_pool('render')
