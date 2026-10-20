@@ -8,6 +8,7 @@ __pycache__/
 *.egg-info/
 .env
 *.log
+*.log.*
 *.state
 # IDE
 .idea/
@@ -27,3 +28,5 @@ GEMINI.md
 ani_collector_*
 project_overview.html
 known_issues.html
+vendor_update_notice_plan.html
+ani_receive_plan.html

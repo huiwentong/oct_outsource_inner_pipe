@@ -80,7 +80,8 @@ class StepComponent(ABC):
             wrong_message = f'manifest.json文件缺少属性: {str(list(data.keys()))}'
             return wrong_message
         
-        manifest_name = Path(self.event.manifest_file).stem.split('_')[0]
+        # 任务名本身可能带下划线（rough_layout / blocking_a），只去掉 _manifest 后缀
+        manifest_name = Path(self.event.manifest_file).stem.removesuffix('_manifest')
 
         if manifest_name != task_name:
             self.logger.error(f'manifest文件名与内容的任务名不符合！{manifest_name} -> {task_name}')
@@ -90,11 +91,14 @@ class StepComponent(ABC):
         wrong_message = check_shotgun_entitys(project, entity_name, asset_type, task_name, task_step)
         
 
-
+        root = Path(self.event.manifest_file).parent
         for file in preview + upload_file:
-            root = Path(self.event.manifest_file).parent
             path_file:Path = root / file
-            if not path_file.exists():
+            # manifest 来自外包商：必须是相对路径（绝对路径在拷贝时 dst_folder / file 会变成复制到自身），
+            # 且不能用 ../ 跳出回传目录
+            if Path(file).is_absolute() or not path_file.resolve().is_relative_to(root.resolve()):
+                wrong_message += f'文件{file}不在manifest所在目录内\n'
+            elif not path_file.exists():
                 wrong_message += f'文件{str(path_file)}不存在\n'
 
         if wrong_message:
@@ -128,7 +132,7 @@ class StepComponent(ABC):
 
         if not source_folder.is_dir():
             raise NotADirectoryError(f"源路径不是目录: {source_folder}")
-        
+
         dst_folder.mkdir(parents=True, exist_ok=True)
         try:
             shutil.copytree(
@@ -168,14 +172,16 @@ ___
                 'text': mk_message
             }
         
-            ret = requests.post(
-                url=url,
-                params={'user_id': uid},
-                data=json.dumps(post_data)
-            )
-        
-            ret.raise_for_status()
-            return ret.json()
+            # 逐个发送，某个人发送失败不影响其他人，也不中断收包
+            try:
+                ret = requests.post(
+                    url=url,
+                    params={'user_id': uid},
+                    data=json.dumps(post_data)
+                )
+                ret.raise_for_status()
+            except Exception:
+                self.logger.exception(f'钉钉通知发送失败: {uid}')
         
         
 

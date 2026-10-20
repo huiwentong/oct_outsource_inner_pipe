@@ -18,6 +18,7 @@ STEP_MAP = {
     'CFX': 'dyn',
     'ly': 'lay',
     'An': 'ani',
+    'Bk': 'blk',
     'Ef': 'efx',
     'lg': 'lgt',
     'Cm': 'cmp',

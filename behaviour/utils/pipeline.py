@@ -122,6 +122,15 @@ class Pipeline():
 
             vendor_name = event.manifest_file.split('/')[3]
             userlist = get_users(user_name=vendor_name)
+            if not userlist:
+                # 账号不存在时 userlist[0] 会越界并阻塞整个 pipeline，这里直接拒收本次回传
+                msg = f'找不到外包商账号 {vendor_name}，已拒收本次回传'
+                try:
+                    send_warning_message(msg + event.summery())
+                except Exception:
+                    # 通知失败也要正常拒收当前事件，不能让异常阻塞后续队列
+                    self.logger.exception('未知账号拒收通知发送失败')
+                raise StepProcessError(msg, event)
 
             component = module.Component(event)
             component.append_msg_ids(userlist[0]['dingtalk_id'])
