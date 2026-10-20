@@ -2,7 +2,6 @@ import requests
 from datetime import datetime
 import json
 
-token = None
 
 def send_pack_collection_message(msg, user):
     uid = user
@@ -85,69 +84,26 @@ ftp地址和密码为重要信息，请妥善保管！
     ret.raise_for_status()
     return ret.json()
 
-def get_token_from_alibaba():
-    global token
-    if token:return token
-    url = 'https://alimail-cn.aliyuncs.com/oauth2/v2.0/token'
-    ret = requests.post(
-        url=url,
-        data={
-            'grant_type': 'client_credentials',
-            'client_id': 'QA0gvNcVVTniRSXl',
-            'client_secret': '50cHQryqi6Ma0daZUFoHRwzsm8Wmw0eF94p4MCicn2l3sPKMjxc4bE1yo8dngnsG'
-        }
-    )
-    token = ret.json()['access_token']
-    return token
 
 
 def send_email_with_alibaba(msg=None, user={}):
-    global token
-    token = get_token_from_alibaba()
-    email = 'huiwentong@octmedia.com'
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
+    url = 'http://192.168.20.217:8080/ding/msg/email'
+
+    mk_message = {
+        'content': msg,
+        'subject': '十月文化-邮件通知',
+        'summary': '用于外包方的重要信息提醒'
+
     }
-    payload={
-        "message": {
-            "subject": "测试邮件",
-            "summary": "测试邮件",
-            "priority": "PRY_HIGH",
-            "from": {
-                "email": email,
-                "name": "十月文化"
-            },
-            "body": {
-                "bodyText": msg,
-                "bodyHtml": f"<p>{msg}</p>"
-            },
-            "toRecipients": [
-                {
-                    "email": user['email'],
-                    "name": user['name']
-                }
-            ]
-        }
+    post_data = {
+        'msg': mk_message ,
+        'user': user
     }
-    url = f'https://alimail-cn.aliyuncs.com/v2/users/{email}/messages'
+
     ret = requests.post(
         url=url,
-        headers=headers,
-        json=payload
+        data=json.dumps(post_data)
     )
-    ret.raise_for_status()
-
-    id = ret.json()['message']['id']
-
-    send_url = f'https://alimail-cn.aliyuncs.com/v2/users/{email}/messages/{id}/send'
-    ret = requests.post(
-        send_url,
-        headers=headers,
-        json={"saveToSentItems": True},
-    )
-
-    print(ret.status_code, ret.text)
     ret.raise_for_status()
 
 
