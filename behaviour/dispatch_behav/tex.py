@@ -73,7 +73,7 @@ class Component(StepComponent):
                         "preview_paths": [str(Path(root) / i) for i in manifest_data['previews']],
                         "notify": ["gongshuai"],
                         "input_form": publish_options,
-                        "extra_data":{"is_outsourcing", True}}
+                        "extra_data":{"is_outsourcing": True}}
 
             publish_json = write_temp_json(pub_data, "/srv/w/temp/temp_files")
             cmd = ('rez-env --paths "//tools02.ds.com/pipeline/packages/int;//tools02.ds.com/pipeline/packages/ext;//tools02.ds.com/pipeline/packages" '
