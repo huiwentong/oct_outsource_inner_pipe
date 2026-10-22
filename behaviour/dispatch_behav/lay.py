@@ -16,6 +16,8 @@ PUBLISH_TAG_ID = 283  # 正式
 # ponytail: 先写死，外包商在 SG 上有 HumanUser 后改为按外包商取
 PUBLISH_USER = 'zhanglingyun'  # SG login，发布者；农场发布失败时 oct_publish 通知此人
 NOTIFY = ['zhanglingyun']  # SG login 列表，发布成功后 oct_publish 通知；可留空
+# ma 里 Stage 引用 usda 的路径，和 oct_publish rename_outsource_version 改写的范围保持一致
+USDA_REF = re.compile(rb'"[^"\r\n]*maya_usd[^"\r\n]*\.usda"')
 
 
 class Component(StepComponent):
@@ -73,8 +75,23 @@ class Component(StepComponent):
             if '/' in ma_file or '\\' in ma_file:
                 return "ma 文件必须和 manifest 放在同一层，不能放在子目录：{}".format(ma_file)
             name_pattern = "{}.{}.{}".format(entity_name, task_step, task_name)
-            if not is_valid_project_name(ma_file, name_pattern):
+            # 只收 .ma：农场要按文本改写 ma 里的 usda 引用，.mb 改不了
+            if not ma_file.lower().endswith('.ma') or not is_valid_project_name(ma_file, name_pattern):
                 return "maya 文件的命名不规范！正确格式为：{}.vxxx.ma".format(name_pattern)
+            error = self._check_usda(ma_file, upload_files)
+            if error:
+                return error
+        return ''
+
+    def _check_usda(self, ma_file: str, upload_files: list) -> str:
+        """Stage 引用了 maya_usd 下的 usda 时，同名 usda 必须一起回传，农场会把它另存成 SG 新版本名"""
+        usda = 'maya_usd/{}.usda'.format(Path(ma_file).stem)
+        ma_path = Path(self.event.manifest_file).parent / ma_file
+        # 逐行读，命中即停，避免把几百 MB 的 ma 整个读进内存
+        with ma_path.open('rb') as fh:
+            has_usda_ref = any(USDA_REF.search(line) for line in fh)
+        if has_usda_ref and usda not in [f.replace('\\', '/') for f in upload_files]:
+            return "ma 文件引用了 maya_usd 下的 usda，请把 {} 加入 upload_files 一起回传".format(usda)
         return ''
 
     def copy_to_w(self):
@@ -116,25 +133,21 @@ class Component(StepComponent):
         if publish_type == 'Publish':
             ma_file = data['publish_options']['ma_file']
             dcc_file = '{}/{}'.format(root, ma_file)
-            version_from = ma_file
             input_form = {'ma_file': dcc_file}
             input_form.update(self.extra_input_form(task_name))
         else:
-            # Dailies 不需要 Maya，dcc_file 传空走 cmd 模式；版本号从预览文件名取
+            # Dailies 不需要 Maya，dcc_file 传空走 cmd 模式
             dcc_file = None
-            version_from = previews[0]
             input_form = {}
-
-        match = re.search(r'\.(v\d{3})\.', Path(version_from).name, re.I)
-        if not match:
-            raise RuntimeError('无法从文件名解析版本号（需要 .vxxx. 格式）：{}'.format(version_from))
-        version_num = match.group(1).lower()
 
         task = find_task(data['project'], entity_name, data['type'], task_name)
         pub_data = {
             'task_id': task['id'],
             'dcc_file': dcc_file,
-            'version_num': version_num,
+            # 外包商不知道 SG 版本：传空让 batch_cli 在农场上取 SG 下一版本号，
+            # Publish 时 oct_publish 的 rename_outsource_version 再把 ma / usda 另存成这个版本名
+            'version_num': '',
+            'extra_data': {'is_outsourcing': True},
             'user': PUBLISH_USER,
             'comment': data['comment'],
             'publish_type': publish_type,
@@ -151,12 +164,12 @@ class Component(StepComponent):
         self.logger.info('submit to deadline cmd: {}'.format(cmd))
 
         job = CommandLineJob(name='{} Outsource Recycle: {} {} {}'.format(
-            self.LABEL, entity_name, publish_type, version_num))
+            self.LABEL, entity_name, publish_type, self.event.version))
         job.set_command(cmd)
         job.set_pool('cache')
         job.set_priority(priority=100)
-        job.set_job_error_limit(number=3)
-        job.set_task_timeout_minutes(minutes='60')
+        job.set_job_error_limit(number=1)
+        job.set_task_timeout_minutes(minutes='1440')  # 1 天，缓存输出可能很久
         job.set_deny_list(['ls', 'liulu'])
         job_id = job.submit()
         if not job_id:
