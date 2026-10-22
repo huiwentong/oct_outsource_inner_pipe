@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """镜头 Layout 收包（rough_layout）；blk / ani 继承本模块，对齐 oct_publish 的 lay -> blk -> ani"""
+import hashlib
 import json
 import re
 import shutil
@@ -78,19 +79,37 @@ class Component(StepComponent):
             # 只收 .ma：农场要按文本改写 ma 里的 usda 引用，.mb 改不了
             if not ma_file.lower().endswith('.ma') or not is_valid_project_name(ma_file, name_pattern):
                 return "maya 文件的命名不规范！正确格式为：{}.vxxx.ma".format(name_pattern)
-            error = self._check_usda(ma_file, upload_files)
+            error = self._check_ma(ma_file, upload_files)
             if error:
                 return error
         return ''
 
-    def _check_usda(self, ma_file: str, upload_files: list) -> str:
-        """Stage 引用了 maya_usd 下的 usda 时，同名 usda 必须一起回传，农场会把它另存成 SG 新版本名"""
+    def _check_ma(self, ma_file: str, upload_files: list) -> str:
+        """检查外包回传的原始 ma：
+        1. 外包检查工具生成的校验文件 <ma 文件名>.<md5>.txt 必须写在 upload_files 里，且 md5 与 ma 一致
+        2. Stage 引用了 maya_usd 下的 usda 时，同名 usda 必须一起回传，农场会把它另存成 SG 新版本名
+        """
+        files = [f.replace('\\', '/') for f in upload_files]
+        hash_pattern = re.compile(re.escape(ma_file) + r'\.([0-9a-fA-F]{32})\.txt')
+        hashes = [m.group(1).lower() for m in map(hash_pattern.fullmatch, files) if m]
+        if not hashes:
+            return "缺少检查工具生成的校验文件 {}.<md5>.txt，请运行检查工具后把 txt 加入 upload_files 一起回传".format(ma_file)
+        if len(hashes) > 1:
+            return "upload_files 里只能有一个 {} 的校验文件，当前有 {} 个".format(ma_file, len(hashes))
+
+        # 逐行读一遍，同时算 md5 和查找 usda 引用，避免大 ma 读两次或整个读进内存
+        md5 = hashlib.md5()
+        has_usda_ref = False
+        with (Path(self.event.manifest_file).parent / ma_file).open('rb') as fh:
+            for line in fh:
+                md5.update(line)
+                if not has_usda_ref:
+                    has_usda_ref = bool(USDA_REF.search(line))
+        if md5.hexdigest() != hashes[0]:
+            return "ma 文件与检查工具生成的校验文件不一致，检查后文件被修改过，请重新运行检查工具：{}".format(ma_file)
+
         usda = 'maya_usd/{}.usda'.format(Path(ma_file).stem)
-        ma_path = Path(self.event.manifest_file).parent / ma_file
-        # 逐行读，命中即停，避免把几百 MB 的 ma 整个读进内存
-        with ma_path.open('rb') as fh:
-            has_usda_ref = any(USDA_REF.search(line) for line in fh)
-        if has_usda_ref and usda not in [f.replace('\\', '/') for f in upload_files]:
+        if has_usda_ref and usda not in files:
             return "ma 文件引用了 maya_usd 下的 usda，请把 {} 加入 upload_files 一起回传".format(usda)
         return ''
 
