@@ -1,10 +1,11 @@
 import json
+import traceback
 from pathlib import Path
 from behaviour.utils.queueevent import Event
 from behaviour.utils.deadline import CommandLineJob
 from behaviour.utils.shotgun_method import find_task
-from behaviour.dispatch_behav.core import StepComponent
-from behaviour.util_behav.utils import write_temp_json, to_win_path, is_valid_file_name
+from behaviour.dispatch_behav.core import StepComponent, StepProcessError
+from behaviour.util_behav.utils import write_temp_json, to_win_path, is_valid_file_name, is_valid_project_name
 
 class Component(StepComponent):
     def __init__(self, event: Event) -> None:
@@ -20,16 +21,22 @@ class Component(StepComponent):
         try:
             manifest_data = self.get_manifest_data()
             upload_files = manifest_data['upload_files']
-            assert isinstance(upload_files, list), \
-                "manifest json文件中 ‘upload_files’ 的值应该是个列表：例：‘upload_files’: ['test01.png', 'test02.png']"
-
+            previews = manifest_data['previews']
+            asset_type = manifest_data['type']
             publish_options = manifest_data['publish_options']
             ma_file = publish_options['ma_file']
+            entity_name = manifest_data['entity_name']
+            task_step = manifest_data['task_step']
+            task_name = manifest_data['task_name']
+
+            if asset_type != 'asset':
+                return "{}环节只接收资产，manifest 的 type 必须为小写 'asset'，当前为：{}".format("mod", asset_type)
+            if not isinstance(upload_files, list) or not isinstance(previews, list):
+                return "manifest 的 upload_files / previews 必须是列表"
+            if not previews:
+                return "previews 不能为空，至少需要一个预览文件"
 
             invalid_upload_files = []
-            if not is_valid_file_name(ma_file):
-                invalid_upload_files.append(ma_file)
-
             for file in upload_files:
                 if is_valid_file_name(file):
                     continue
@@ -39,9 +46,23 @@ class Component(StepComponent):
                 return "以下文件名存在非法字符（空格，中文，特殊字符等）, 请修改文件名：\n {}".format(
                     '\n'.join(invalid_upload_files))
 
+            if upload_files:
+                if not ma_file:
+                    return "Publish 缺少 publish_options.ma_file"
+                if ma_file not in upload_files:
+                    return "ma_file 未包含在 upload_files 中：{}".format(ma_file)
+                if '/' in ma_file or '\\' in ma_file:
+                    return "ma 文件必须和 manifest 放在同一层，不能放在子目录：{}".format(ma_file)
+                name_pattern = "{}.{}.{}".format(entity_name, task_step, task_name)
+                if not ma_file.lower().endswith('.ma') or not is_valid_project_name(ma_file, name_pattern):
+                    return "maya 文件的命名不规范！正确格式为：{}.vxxx.ma".format(name_pattern)
+
+            return ''
+
         except Exception as e:
-            self.logger.error(e)
-            return e
+            self.logger.error(traceback.format_exc())
+            return 'manifest 检查出错：\n' + traceback.format_exc()
+
 
     def publish_to_ddline(self):
         try:
@@ -91,5 +112,7 @@ class Component(StepComponent):
             self.logger.info(f'创建manifest任务成功, 任务ID: {job_id}')
 
         except Exception as e:
-            self.logger.error(e)
-            return e
+            self.logger.error(traceback.format_exc())
+            msg = '提交 Deadline 发布任务失败：{}'.format(e)
+            self.send_message(False, msg + self.event.summery())
+            raise StepProcessError(msg, self.event) from e
