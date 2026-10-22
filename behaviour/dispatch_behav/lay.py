@@ -53,21 +53,42 @@ class Component(StepComponent):
         previews = data['previews']
         ma_file = (data.get('publish_options') or {}).get('ma_file')
 
-        # 回收目录名取自 type，oct_publish 的 check_work_file 按小写 shot 比较
+        # 实体类型：只收镜头。回收目录名取自 type，oct_publish 的 check_work_file 按小写 shot 比较
         if data['type'] != 'shot':
             return "{}环节只接收镜头，manifest 的 type 必须为小写 'shot'，当前为：{}".format(self.LABEL, data['type'])
+
+        # 任务名：必须是本环节的主任务或其拆分任务（如 blocking / blocking_a）
         if not task_name.startswith(self.PRIMARY_TASK):
             return "{}环节只接收 {} 任务，当前为：{}".format(self.LABEL, self.PRIMARY_TASK, task_name)
+
+        # 字段类型：upload_files / previews 必须是列表，后面要拼接遍历
         if not isinstance(upload_files, list) or not isinstance(previews, list):
             return "manifest 的 upload_files / previews 必须是列表"
+
+        # 预览：Dailies 和 Publish 都要生成 SG 版本预览，至少一个
         if not previews:
             return "previews 不能为空，至少需要一个预览文件"
 
+        # 文件名字符：只允许字母、数字、下划线、点、横线
         invalid = [f for f in upload_files + previews if not is_valid_file_name(f)]
         if invalid:
             return "以下文件名存在非法字符（空格，中文，特殊字符等），请修改文件名：\n{}".format('\n'.join(invalid))
 
+        # 预览格式：只收 mov / MOV。oct_publish 把非 mov 当图片序列用 ffmpeg 合成，mp4 等视频会在农场失败
+        bad_exts = [p for p in previews if not p.lower().endswith('.mov')]
+        if bad_exts:
+            return "预览文件只接收 mov 格式，请转成 mov 后回传：\n{}".format('\n'.join(bad_exts))
+
+        # mov 命名：必须是 {entity}.{step}.{task}.vxxx.mov。
+        name_pattern = "{}.{}.{}".format(entity_name, task_step, task_name)
+        mov_pattern = re.compile(re.escape(name_pattern) + r'\.v\d{3}\.mov', re.I)
+        bad_movs = [p for p in previews if not mov_pattern.fullmatch(Path(p).name)]
+        if bad_movs:
+            return "mov 预览文件命名不规范，正确格式为：{}.vxxx.mov\n{}".format(name_pattern, '\n'.join(bad_movs))
+
+        # 以下只针对 Publish（upload_files 非空）；upload_files 为空即 Dailies，不需要 ma
         if upload_files:
+            # ma_file 必填，且必须是 upload_files 中的一个
             if not ma_file:
                 return "Publish 缺少 publish_options.ma_file"
             if ma_file not in upload_files:
@@ -75,10 +96,10 @@ class Component(StepComponent):
             # 回收后路径必须正好 9 段，ma 放子目录会多一段，check_work_file 不认
             if '/' in ma_file or '\\' in ma_file:
                 return "ma 文件必须和 manifest 放在同一层，不能放在子目录：{}".format(ma_file)
-            name_pattern = "{}.{}.{}".format(entity_name, task_step, task_name)
             # 只收 .ma：农场要按文本改写 ma 里的 usda 引用，.mb 改不了
             if not ma_file.lower().endswith('.ma') or not is_valid_project_name(ma_file, name_pattern):
                 return "maya 文件的命名不规范！正确格式为：{}.vxxx.ma".format(name_pattern)
+            # ma 内容：md5 校验文件一致，引用的 usda 一起回传
             error = self._check_ma(ma_file, upload_files)
             if error:
                 return error
