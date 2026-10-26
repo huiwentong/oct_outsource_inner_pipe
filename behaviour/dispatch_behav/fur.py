@@ -63,7 +63,7 @@ class Component(StepComponent):
                     xgen_files = [str(p) for p in root.glob("*.xgen") if p.is_file()]
                     if len(xgen_files) > 1:
                         return "当前任务文件夹有下多个 .xgen 文件： {}".format("\n".join(xgen_files))
-                    if len(xgen_files):
+                    if not len(xgen_files):
                         return "当前任务文件夹下没有 .xgen 文件"
                     xgen_file = xgen_files[0]
                     xgen_file_format = "{}__{}_hair.xgen".format(str(Path(ma_file).stem), entity_name)
