@@ -1,4 +1,5 @@
 import json
+import shutil
 import traceback
 from pathlib import Path
 from behaviour.utils.queueevent import Event
@@ -50,8 +51,6 @@ class Component(StepComponent):
             if upload_files:
                 if not ma_file:
                     return "Publish 缺少 publish_options.ma_file"
-                if ma_file not in upload_files:
-                    return "ma_file 未包含在 upload_files 中：{}".format(ma_file)
                 if '/' in ma_file or '\\' in ma_file:
                     return "ma 文件必须和 manifest 放在同一层，不能放在子目录：{}".format(ma_file)
                 name_pattern = "{}.{}.{}".format(entity_name, task_step, task_name)
@@ -76,6 +75,25 @@ class Component(StepComponent):
         except Exception as e:
             self.logger.error(traceback.format_exc())
             return 'manifest 检查出错：\n' + traceback.format_exc()
+
+    def copy_to_w(self):
+        """只拷贝 manifest 里列出的文件（upload_files + previews + manifest 本身 + maya ），保留相对路径，已存在则覆盖"""
+        dst_folder = Path(self.event.dst_path) / self.event.version
+        manifest = Path(self.event.manifest_file)
+        manifest_data = self.get_manifest_data()
+        publish_options = manifest_data['publish_options']
+        ma_file = publish_options['ma_file']
+        for rel in manifest_data['upload_files'] + manifest_data['previews'] + [manifest.name] + [ma_file]:
+            src = manifest.parent / rel
+            dst = dst_folder / rel
+            try:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if src.is_dir():
+                    shutil.copytree(src, dst, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(src, dst)
+            except Exception as e:
+                raise RuntimeError("复制失败: {} -> {}".format(src, dst)) from e
 
     def publish_to_ddline(self):
         try:
