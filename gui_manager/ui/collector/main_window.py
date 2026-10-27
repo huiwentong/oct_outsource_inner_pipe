@@ -608,7 +608,7 @@ class CollectorWindow(QMainWindow):
             if vendor.get('dingtalk_id'):
                 ret = send_pack_collection_message(msg, vendor['dingtalk_id'])
                 print(ret)
-            if vendor.get('email')
+            if vendor.get('email'):
                 ret = send_email_with_alibaba(msg, {'name': vendor['name'], 'email': vendor['email']})
                 print(ret)
         else:
