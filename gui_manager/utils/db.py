@@ -77,7 +77,7 @@ class Database:
 
     def get_user_contact(self, name):
             """获取外包方用户登录名列表，用于下拉菜单自动补全。"""
-            sql = "SELECT dingtalk_id FROM ftpuser"
+            sql = "SELECT * FROM ftpuser"
             params: tuple = ()
             if name:
                 sql += " WHERE name ILIKE %s"

@@ -138,6 +138,6 @@ class CollectWorker(QObject):
                         break
                     done += 1
         except Exception as exc:
-            error = f"执行过程中发生错误：{exc}"
+            error = f"执行过程中发生错误：{exc} "+traceback.format_exc()
 
         return {"ok": not error, "done": done, "total": total, "error": error}

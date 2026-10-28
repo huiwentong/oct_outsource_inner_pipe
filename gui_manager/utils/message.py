@@ -90,7 +90,7 @@ def send_email_with_alibaba(msg=None, user={}):
     url = 'http://192.168.20.217:8080/ding/msg/email'
 
     mk_message = {
-        'content': msg,
+        'content': str(msg),
         'subject': '十月文化-邮件通知',
         'summary': '用于外包方的重要信息提醒'
 
@@ -99,12 +99,13 @@ def send_email_with_alibaba(msg=None, user={}):
         'msg': mk_message ,
         'user': user
     }
-
+    print(post_data)
     ret = requests.post(
         url=url,
         data=json.dumps(post_data)
     )
     ret.raise_for_status()
+    return ret.json()
 
 
 

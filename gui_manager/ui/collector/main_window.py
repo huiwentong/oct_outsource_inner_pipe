@@ -605,12 +605,16 @@ class CollectorWindow(QMainWindow):
                 'rely_steps': ', '.join(list(steps)),
                 'user': getpass.getuser(),
             }
+            print(vendor.get('dingtalk_id'))
+            print(vendor.get('email'))
+            print(vendor.get('name'))
             if vendor.get('dingtalk_id'):
                 ret = send_pack_collection_message(msg, vendor['dingtalk_id'])
                 print(ret)
             if vendor.get('email'):
                 ret = send_email_with_alibaba(msg, {'name': vendor['name'], 'email': vendor['email']})
-                print(ret)
+                if ret.get('code') != 200:
+                    raise RuntimeError(f"发送邮件失败: {ret.get('msg')}")
         else:
             self._processor.mark_finished(ok=False)
             QMessageBox.critical(
