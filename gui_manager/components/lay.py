@@ -15,6 +15,7 @@ from utils.usd import usd_deps
 
 RIG_TYPES = {"CH", "PROP"}
 USD_TYPES = {"ASB", "ENV"}
+PICKER_ROOT = Path("W:/projects/lib/Ani_lib/MG_picker")
 
 # 当前存活的 lay / ani 组件, 供 "应用到全部" 同步 nemo 勾选
 _LIVE: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
@@ -40,6 +41,28 @@ def _existing(paths, notes, label):
     return out
 
 
+def _publish_dir(name: str, task: str, project: str) -> tuple[Path | None, str | None]:
+    """查最新发布的版本目录, 区分 "没有发布" 和 "有发布但路径为空 / 不存在" 两类问题.
+
+    Args:
+        name (str): 资产名
+        task (str): SG 任务名, 如 ``rigging``
+        project (str): 项目名
+
+    Returns:
+        tuple[Path | None, str | None]: (版本目录, 提示); 有问题时版本目录为 None
+    """
+    v = latest_publish(name, task, project)
+    if not v:
+        return None, f"{name} 没有 {task} 发布"
+    path = v.get("sg_path_to_v_folder")
+    if not path:
+        return None, f"{name} 的 {task} 发布在 Shotgun 上没有填版本目录路径"
+    if not Path(path).exists():
+        return None, f"{name} 的 {task} 发布路径不存在: {path}"
+    return Path(path), None
+
+
 @lru_cache(maxsize=None)
 def collect_asset(name: str, asset_type: str, project: str) -> tuple[frozenset[str], tuple[str, ...]]:
     """收集单个资产的发包文件: CH / PROP 取 rigging 发布, ASB / ENV 解析 asb usda 依赖, 其他类型不收集.
@@ -55,10 +78,9 @@ def collect_asset(name: str, asset_type: str, project: str) -> tuple[frozenset[s
     notes: list[str] = []
     files: set[str] = set()
     if asset_type in RIG_TYPES:
-        v = latest_publish(name, "rigging", project)
-        if not v:
-            return frozenset(), (f"{name} 没有 rigging 发布",)
-        v_dir = Path(v["sg_path_to_v_folder"])
+        v_dir, note = _publish_dir(name, "rigging", project)
+        if not v_dir:
+            return frozenset(), (note,)
         rig_dir = v_dir.parent / strip_version(v_dir.name)
         root = v_dir.parent.parent
         files |= _existing([rig_dir / f"{name}.ma", rig_dir / "sourceimages", rig_dir / "controller_data.json",
@@ -66,10 +88,10 @@ def collect_asset(name: str, asset_type: str, project: str) -> tuple[frozenset[s
             notes, name,
         )
     elif asset_type in USD_TYPES:
-        v = latest_publish(name, "model", project)
-        if not v:
-            return frozenset(), (f"{name} 没有 model 发布",)
-        entry = Path(v["sg_path_to_v_folder"]).parent.parent / "asb" / f"{name}.usda"
+        v_dir, note = _publish_dir(name, "model", project)
+        if not v_dir:
+            return frozenset(), (note,)
+        entry = v_dir.parent.parent / "asb" / f"{name}.usda"
         if not entry.exists():
             return frozenset(), (f"{name} 缺少 {entry}",)
         deps, unresolved = usd_deps(str(entry))
@@ -96,15 +118,41 @@ def collect_nemo(name: str, project: str) -> tuple[frozenset[str], tuple[str, ..
     notes: list[str] = []
     files: set[str] = set()
     for task in ("rigging_nemo", "rigging_nemo_low"):
-        v = latest_publish(name, task, project)
-        if not v:
-            notes.append(f"{name} 没有 {task} 发布, 已跳过")
+        v_dir, note = _publish_dir(name, task, project)
+        if not v_dir:
+            notes.append(f"{note}, 已跳过")
             continue
-        v_dir = Path(v["sg_path_to_v_folder"])
         nemo_dir = v_dir.parent / strip_version(v_dir.name)
         files |= _existing([nemo_dir / f"{name}.ma", nemo_dir / "sourceimages"], notes, f"{name} {task}")
     return frozenset(files), tuple(notes)
 
+
+@lru_cache(maxsize=None)
+def _picker_dirs(project: str) -> dict[str, str]:
+    """列出项目的 MG picker 目录; 目录名有大小写不一致的 (如 JiangLiuEr), 统一按小写建索引.
+
+    Args:
+        project (str): 项目名, 对应 MG_picker 下的大写目录, 如 ``mk2`` → ``MK2``
+
+    Returns:
+        dict[str, str]: {小写目录名: 目录路径 (正斜杠)}, 如 ``{"jiangliuer": "W:/projects/lib/Ani_lib/MG_picker/MK2/JiangLiuEr"}``;
+            项目没有 picker 目录时返回空字典
+    """
+    root = PICKER_ROOT / project.upper()
+    return {p.name.lower(): p.as_posix() for p in root.iterdir() if p.is_dir()} if root.is_dir() else {}
+
+
+def find_picker(name: str, project: str) -> str | None:
+    """按资产名找 MG picker 目录 (W:/projects/lib/Ani_lib/MG_picker/{项目}/{资产}), 找不到返回 None.
+
+    Args:
+        name (str): 资产名
+        project (str): 项目名
+
+    Returns:
+        str | None: picker 目录的本地路径
+    """
+    return _picker_dirs(project).get(name.lower())
 
 
 def default_path_files(local_paths) -> dict[str, str]:
@@ -162,6 +210,29 @@ class LayComponent(StepComponent):
             self.notes += [f'(场次资产) {n}' for n in notes] if from_sequence else notes
             if asset_type in RIG_TYPES:
                 self._rig_assets.append(name)
+                if files:  # 没有 rig 文件就没有 default_path.json, picker 单独发过去落不了盘
+                    self._add_picker(name, asset_type, entity_root(next(iter(files))))
+
+    def _add_picker(self, name: str, asset_type: str, root: tuple[str, str] | None):
+        """把资产的 MG picker 目录加入上传清单, 放到它的 rig 目录下; 道具一般不做 picker, 只提示角色缺失.
+
+        Args:
+            name (str): 资产名
+            asset_type (str): SG 的 sg_asset_type, ``CH`` / ``PROP``
+            root (tuple[str, str] | None): 该资产 rig 文件的 ``entity_root`` 结果 (I 盘根目录, FTP 根目录),
+                保证 picker 和 rig 文件落在同一个 FTP 实体目录下; 为 None 时不加 picker
+
+        Returns:
+            None: 原地写入 ``self.transfer_folders`` 和 ``self.notes``
+        """
+        picker = find_picker(name, self.project)
+        if not picker:
+            if asset_type == "CH":
+                self.notes.append(f"{name} 没有 MG picker")
+        elif root:
+            self.transfer_folders[picker] = f"{root[1]}/rig/mg_picker"
+        else:  # rig 文件不在 I:/projects 下, _add 已提示跳过, 这里说明 picker 为什么也没发
+            self.notes.append(f"{name} 的 rig 文件不在 I:/projects 下, MG picker 一并跳过")
 
     def _add(self, files) -> list[str]:
         """加入上传清单 (按 FTP 路径去重), 返回新加入的本地路径."""
