@@ -211,6 +211,21 @@ def shot_assets(shot: str, project: str) -> tuple[tuple[str, str, bool], ...]:
     return tuple(result)  # 用 tuple 而不是 list: 结果会被 lru_cache 缓存共用, 不能被调用方修改
 
 
+def create_sg_user(user_info):
+    user_data = {
+        'login': user_info.get('username'),
+        'name': user_info.get('username'),
+        'email': user_info.get('email') or '',
+        'sg_dingtalk_id': user_info.get('ding_id') or '',
+        'sg_text': user_info.get('description') or '',
+        'sg_status_list': 'clsd',
+    }
+    print(user_data)
+    user = FastSg().client.create("HumanUser", user_data)
+    return user
+
+
+
 if __name__ == '__main__':
     print(FastSg().client)
     print(FastSg().client)

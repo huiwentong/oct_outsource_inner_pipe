@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from ui.usermanager import services
+from utils.shotgun import create_sg_user
 from ui.window_utils import keep_window_on_screen, load_app_icon
 
 # 用户名同时是服务器上的 Linux 账号名和回传目录名 /srv/ftp/{用户名}:

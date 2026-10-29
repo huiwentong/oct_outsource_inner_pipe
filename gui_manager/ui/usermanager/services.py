@@ -15,6 +15,7 @@ from utils.permissionmanager import (
     get_all_user as pm_get_all_user,
 )
 from utils.config import server_config
+from utils.shotgun import create_sg_user
 import traceback
 
 # mock 开关：当前默认拥有权限。改为 False 可演示“无权限自动关闭”。
@@ -76,6 +77,7 @@ def create_vendor_user(data: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]
         c = server_config()
         return True, "创建成功", {
             "username": username,
+            'description': data.get('description'),
             "user_id": uid,
             "ding_id": data.get('ding_id'),
             "email": data.get('email'),
@@ -121,7 +123,17 @@ def continue_after_success(data: dict[str, Any]) -> None:
         'frp_address': data['frp_address'],
         'frp_home': data['frp_home'],
     }
+
+    create_sg_msg = ''
+    try:
+        user = create_sg_user(data)
+    except:
+        create_sg_msg = ' 但是在shotgun中创建用户失败，请联系管理员手动创建'
+        print(traceback.format_exc())
+        
+
+
     if data['ding_id']:
-        send_simple_message(m_data, '新账户创建成功！', data['ding_id'])
+        send_simple_message(m_data, '新账户创建成功！' + create_sg_msg, data['ding_id'])
     if data['email']:
-        send_email_with_alibaba('新账户创建成功！\n'+str(m_data), {'name': data['name'],'email': data['email']})
+        send_email_with_alibaba('新账户创建成功！\n'+str(m_data)+create_sg_msg, {'name': data['username'],'email': data['email']})

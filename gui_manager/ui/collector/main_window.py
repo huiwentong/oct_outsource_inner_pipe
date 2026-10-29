@@ -584,7 +584,7 @@ class CollectorWindow(QMainWindow):
         if result.get("ok"):
             done = result.get("done", 0)
             self._processor.mark_finished()
-            self._refresh_region3()
+            # self._refresh_region3()
             QMessageBox.information(
                 self,
                 "抓包完成",

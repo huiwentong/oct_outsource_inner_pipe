@@ -42,6 +42,8 @@ class ModComponent(StepComponent):
             if not sg_version:
                 continue
             path_to_geometry = sg_version['sg_path_to_geometry']
+            if not path_to_geometry:
+                continue
             loc_step_dir = str(Path(path_to_geometry).parent.parent)
             ftp_step_dir = f"/oct/{self.project}/{self.entity_type}/{self.entity}/{step}"
 
