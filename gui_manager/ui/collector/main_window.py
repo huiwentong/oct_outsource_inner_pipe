@@ -60,6 +60,7 @@ class CollectorWindow(QMainWindow):
         self.entity_type: Optional[str] = None  
         self._step_boxes: dict[str, QCheckBox] = {}
         self._rows: list[TaskRow] = []
+        self.vendors: list[str] = []
         self._rows_maximized = False
         self.db = Database()
         self._placed_once = False
@@ -292,6 +293,7 @@ class CollectorWindow(QMainWindow):
         outer.addLayout(header)
 
         row = QHBoxLayout()
+        self.dynamic_vendor_row:QHBoxLayout = row
         row.setSpacing(10)
         self.vendor_combo = PopupStyledComboBox()
         self.vendor_combo.setEditable(True)
@@ -304,7 +306,7 @@ class CollectorWindow(QMainWindow):
         completer.setFilterMode(Qt.MatchFlag.MatchContains)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.vendor_combo.setCompleter(completer)
-        self.vendor_combo.lineEdit().textChanged.connect(self._update_state)
+        self.vendor_combo.lineEdit().textChanged.connect(self.vendor_changed)
 
         tip = _hint_label("确定后系统会把抓包数据放到该外包方可访问的 FTP 路径")
         row.addWidget(self.vendor_combo)
@@ -480,6 +482,23 @@ class CollectorWindow(QMainWindow):
 
         self._update_state()
 
+
+    def vendor_changed(self, text: str) -> None:
+        self._update_state()
+        if text not in self.vendors:
+            self.vendors.append(text)
+            button = QPushButton(text)
+            button.setObjectName(text)
+            button.setMaximumWidth(100)
+            def delete_self(this_button:QPushButton, collection:CollectorWindow):
+                collection.vendors.remove(this_button.text())
+                this_button.deleteLater()
+                index = self.dynamic_vendor_row.indexOf(button)
+                self.dynamic_vendor_row.takeAt(index)
+            button.clicked.connect(lambda: delete_self(button, self))
+            self.dynamic_vendor_row.insertWidget(1, button)
+
+
     def _update_state(self) -> None:
         entities = self._checked_entities()
         steps = self._checked_steps()
@@ -590,31 +609,28 @@ class CollectorWindow(QMainWindow):
                 "抓包完成",
                 f"已执行 {done} 项抓包任务。\n",
             )
-            vendor = self.db.get_user_contact(self.vendor_combo.currentText().strip())
-            description = ''
-            assets = ''
-            steps = set()
-            for row in self._rows:
-                description += f'{row.project}/{row.entity}/{row.step}备注： {row.component.description}\n'
-                assets += f'{row.entity}, '
-                steps.add(row.step)
+            for _vendor in self.vendors:
+                vendor = self.db.get_user_contact(_vendor.strip())
+                description = ''
+                assets = ''
+                steps = set()
+                for row in self._rows:
+                    description += f'{row.project}/{row.entity}/{row.step}备注： {row.component.description}\n'
+                    assets += f'{row.entity}, '
+                    steps.add(row.step)
 
-            msg = {
-                'description': description,
-                'rely_assets': assets,
-                'rely_steps': ', '.join(list(steps)),
-                'user': getpass.getuser(),
-            }
-            print(vendor.get('dingtalk_id'))
-            print(vendor.get('email'))
-            print(vendor.get('name'))
-            if vendor.get('dingtalk_id'):
-                ret = send_pack_collection_message(msg, vendor['dingtalk_id'])
-                print(ret)
-            if vendor.get('email'):
-                ret = send_email_with_alibaba(msg, {'name': vendor['name'], 'email': vendor['email']})
-                if ret.get('code') != 200:
-                    raise RuntimeError(f"发送邮件失败: {ret.get('msg')}")
+                msg = {
+                    'description': description,
+                    'rely_assets': assets,
+                    'rely_steps': ', '.join(list(steps)),
+                    'user': getpass.getuser(),
+                }
+                if vendor.get('dingtalk_id'):
+                    ret = send_pack_collection_message(msg, vendor['dingtalk_id'])
+                if vendor.get('email'):
+                    ret = send_email_with_alibaba(msg, {'name': vendor['name'], 'email': vendor['email']})
+                    if ret.get('code') != 200:
+                        raise RuntimeError(f"发送邮件失败: {ret.get('msg')}")
         else:
             self._processor.mark_finished(ok=False)
             QMessageBox.critical(
