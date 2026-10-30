@@ -111,7 +111,7 @@ class Component(StepComponent):
             task = find_task(project, entity_name, asset_type, task_name)
 
             pub_data = {"task_id": task["id"],
-                        "dcc_file": str(Path(root)/ maya_file),
+                        "dcc_file": str(Path(root)/ maya_file) if maya_file else "",
                         "version_num": "",
                         "user": "gongshuai",
                         "comment": manifest_data['comment'],
