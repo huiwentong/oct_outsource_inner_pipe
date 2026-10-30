@@ -121,7 +121,7 @@ class Component(StepComponent):
                         "publish_type": publish_type,
                         "publish_tag_id": 1141,
                         "preview_paths": [str(Path(root) / i) for i in manifest_data['previews']],
-                        "notify": ["gongshuai"],
+                        "notify": ["gongshuai", "jiajiaai"],
                         "input_form": publish_options,
                         "extra_data": {"is_outsourcing": True}}
 
