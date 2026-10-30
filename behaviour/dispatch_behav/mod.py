@@ -25,7 +25,7 @@ class Component(StepComponent):
             previews = manifest_data['previews']
             asset_type = manifest_data['type']
             publish_options = manifest_data['publish_options']
-            ma_file = publish_options['ma_file']
+            ma_file = publish_options.get('ma_file')
             entity_name = manifest_data['entity_name']
             task_step = manifest_data['task_step']
             task_name = manifest_data['task_name']
@@ -68,11 +68,13 @@ class Component(StepComponent):
         manifest = Path(self.event.manifest_file)
         manifest_data = self.get_manifest_data()
         publish_options = manifest_data['publish_options']
-        ma_file = publish_options['ma_file']
+        ma_file = publish_options.get('ma_file')
         zb_file = publish_options.get('zb_file', '')
-        projects = [ma_file]
+        projects = []
         if zb_file:
             projects.append(zb_file)
+        if ma_file:
+            projects.append(ma_file)
 
         for rel in manifest_data['upload_files'] + manifest_data['previews'] + [manifest.name] + projects:
             src = manifest.parent / rel
