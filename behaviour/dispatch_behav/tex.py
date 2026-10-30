@@ -25,7 +25,7 @@ class Component(StepComponent):
             previews = manifest_data['previews']
             asset_type = manifest_data['type']
             publish_options = manifest_data['publish_options']
-            ma_file = publish_options['ma_file']
+            ma_file = publish_options.get('ma_file')
             entity_name = manifest_data['entity_name']
             task_step = manifest_data['task_step']
             task_name = manifest_data['task_name']
@@ -68,9 +68,12 @@ class Component(StepComponent):
         manifest = Path(self.event.manifest_file)
         manifest_data = self.get_manifest_data()
         publish_options = manifest_data['publish_options']
-        ma_file = publish_options['ma_file']
+
+        projects = []
+        ma_file = publish_options.get('ma_file')
+        if ma_file:
+            projects.append(ma_file)
         src_tex_files = publish_options.get('src_tex_files', [])
-        projects = [ma_file]
         if src_tex_files:
             projects.extend(src_tex_files)
 
@@ -93,8 +96,9 @@ class Component(StepComponent):
             manifest_data = self.get_manifest_data()
 
             publish_options = manifest_data['publish_options']
-            maya_file = publish_options['ma_file']
-            publish_options['ma_file'] = str(Path(root) / maya_file)
+            maya_file = publish_options.get('ma_file')
+            if maya_file:
+                publish_options['ma_file'] = str(Path(root) / maya_file)
             src_tex_files = publish_options.get('src_tex_files', [])
             publish_options['src_tex_files'] = [str(Path(root) / i) for i in src_tex_files] if src_tex_files else ["None"]
 
@@ -107,14 +111,14 @@ class Component(StepComponent):
             task = find_task(project, entity_name, asset_type, task_name)
 
             pub_data = {"task_id": task["id"],
-                        "dcc_file": str(Path(root)/ maya_file),
+                        "dcc_file": str(Path(root)/ maya_file) if maya_file else "",
                         "version_num": "",
                         "user": "gongshuai",
                         "comment": manifest_data['comment'],
                         "publish_type": publish_type,
                         "publish_tag_id": 1141,
                         "preview_paths": [str(Path(root) / i) for i in manifest_data['previews']],
-                        "notify": ["gongshuai"],
+                        "notify": ["gongshuai", "jiajiaai"],
                         "input_form": publish_options,
                         "extra_data":{"is_outsourcing": True}}
 

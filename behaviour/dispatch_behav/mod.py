@@ -2,9 +2,11 @@ import json
 import shutil
 import traceback
 from pathlib import Path
-from behaviour.dispatch_behav.core import StepComponent
 from behaviour.utils.queueevent import Event
-from behaviour.util_behav.utils import is_valid_file_name, is_valid_project_name
+from behaviour.utils.deadline import CommandLineJob
+from behaviour.utils.shotgun_method import find_task
+from behaviour.dispatch_behav.core import StepComponent, StepProcessError
+from behaviour.util_behav.utils import is_valid_file_name, is_valid_project_name, to_win_path, write_temp_json
 
 class Component(StepComponent):
     def __init__(self, event: Event) -> None:
@@ -23,7 +25,7 @@ class Component(StepComponent):
             previews = manifest_data['previews']
             asset_type = manifest_data['type']
             publish_options = manifest_data['publish_options']
-            ma_file = publish_options['ma_file']
+            ma_file = publish_options.get('ma_file')
             entity_name = manifest_data['entity_name']
             task_step = manifest_data['task_step']
             task_name = manifest_data['task_name']
@@ -66,11 +68,13 @@ class Component(StepComponent):
         manifest = Path(self.event.manifest_file)
         manifest_data = self.get_manifest_data()
         publish_options = manifest_data['publish_options']
-        ma_file = publish_options['ma_file']
+        ma_file = publish_options.get('ma_file')
         zb_file = publish_options.get('zb_file', '')
-        projects = [ma_file]
+        projects = []
         if zb_file:
             projects.append(zb_file)
+        if ma_file:
+            projects.append(ma_file)
 
         for rel in manifest_data['upload_files'] + manifest_data['previews'] + [manifest.name] + projects:
             src = manifest.parent / rel
@@ -85,4 +89,56 @@ class Component(StepComponent):
                 raise RuntimeError("复制失败: {} -> {}".format(src, dst)) from e
 
     def publish_to_ddline(self):
-        return super().publish_to_ddline()
+        try:
+            root = Path(self.event.dst_path) / self.event.version
+            root = to_win_path(root)
+            manifest_data = self.get_manifest_data()
+
+            publish_options = manifest_data['publish_options']
+            maya_file = publish_options.get('ma_file')
+            zb_file =  publish_options.get('zb_file')
+            if maya_file:
+                publish_options['ma_file'] = str(Path(root) / maya_file)
+            if zb_file:
+                publish_options['zb_file'] = str(Path(root) / zb_file)
+
+            publish_type = 'Dailies'
+
+            entity_name = manifest_data['entity_name']
+            asset_type = manifest_data['type']
+            task_name = manifest_data['task_name']
+            project = manifest_data['project']
+            task = find_task(project, entity_name, asset_type, task_name)
+
+            pub_data = {"task_id": task["id"],
+                        "dcc_file": str(Path(root)/ maya_file) if maya_file else "",
+                        "version_num": "",
+                        "user": "gongshuai",
+                        "comment": manifest_data['comment'],
+                        "publish_type": publish_type,
+                        "publish_tag_id": 1141,
+                        "preview_paths": [str(Path(root) / i) for i in manifest_data['previews']],
+                        "notify": ["gongshuai", "jiajiaai"],
+                        "input_form": publish_options,
+                        "extra_data":{"is_outsourcing": True}}
+
+            publish_json = write_temp_json(pub_data, "/srv/w/temp/temp_files")
+            cmd = ('rez-env --paths "//tools02.ds.com/pipeline/packages/int;//tools02.ds.com/pipeline/packages/ext;//tools02.ds.com/pipeline/packages" '
+                   'PySide2 oct_publish -- batch_cli {}').format(publish_json)
+            self.logger.info("submit to deadline cmd: {}".format(cmd))
+            job_name = "Model Outsource Recycle: {} {} outsource root:{}".format(entity_name, publish_type, root)
+            _job = CommandLineJob(name=job_name)
+            _job.set_command(cmd)
+            _job.set_pool('render')
+            _job.set_priority(priority=100)
+            _job.set_job_error_limit(number=1)
+            _job.set_task_timeout_minutes(minutes='60')
+            _job.set_deny_list(['ls', 'liulu'])
+            job_id = _job.submit()
+            self.logger.info(f'创建manifest任务成功, 任务ID: {job_id}')
+
+        except Exception as e:
+            self.logger.error(traceback.format_exc())
+            msg = '提交 Deadline 发布任务失败：{}'.format(e)
+            self.send_message(False, msg + self.event.summery())
+            raise StepProcessError(msg, self.event) from e
