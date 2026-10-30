@@ -94,9 +94,10 @@ class Component(StepComponent):
 
             publish_options = manifest_data['publish_options']
             maya_file = publish_options['ma_file']
-            zb_file =  publish_options['zb_file']
+            zb_file =  publish_options.get('zb_file')
             publish_options['ma_file'] = str(Path(root) / maya_file)
-            publish_options['zb_file'] = str(Path(root) / zb_file)
+            if zb_file:
+                publish_options['zb_file'] = str(Path(root) / zb_file)
 
             publish_type = 'Dailies'
 
