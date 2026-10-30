@@ -80,8 +80,8 @@ class Database:
             sql = "SELECT * FROM ftpuser"
             params: tuple = ()
             if name:
-                sql += " WHERE name ILIKE %s"
-                params = (f"%{name}%",)
+                sql += " WHERE name = %s"
+                params = (name,)
             sql += " ORDER BY name;"
             ret = self.fetch_one(sql, params)
             if ret:

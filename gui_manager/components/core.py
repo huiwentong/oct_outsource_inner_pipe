@@ -163,14 +163,17 @@ class StepComponent:
             self.transfer_folders[str(config_file)] = str(d_path_file)
 
 
-    def start_collection(self, vendor):
+    def start_collection(self, vendors: list[str]):
         self.check_relies_folders()
         all_group = self.rely_assets+self.rely_steps+[self.project]
         for _g in all_group:
             r = create_group(_g)
             print(r)
-        ret = add_group2vendor(vender=vendor, groups=all_group)
-        print(ret)
+        
+        for vendor in vendors:
+            ret = add_group2vendor(vender=vendor, groups=all_group)
+            print(ret)
+        
         for source, dst in self.transfer_folders.items():
             with FtpClient() as ftp:
                 path_s = Path(source)

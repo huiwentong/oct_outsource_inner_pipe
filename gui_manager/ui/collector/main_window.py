@@ -485,7 +485,10 @@ class CollectorWindow(QMainWindow):
 
     def vendor_changed(self, text: str) -> None:
         self._update_state()
-        if text not in self.vendors:
+        all_vendors = []
+        for i in range(self.vendor_combo.model().rowCount()):
+            all_vendors.append(self.vendor_combo.model().data(self.vendor_combo.model().index(i, 0)))
+        if text not in self.vendors and text in all_vendors:
             self.vendors.append(text)
             button = QPushButton(text)
             button.setObjectName(text)
@@ -548,28 +551,29 @@ class CollectorWindow(QMainWindow):
                 )
                 return
 
-        vendor = self.vendor_combo.currentText().strip()
         # 下拉框可以手动输入, 先确认账号存在, 否则建完组后入组时服务端才报 409 "用户不存在"
         try:
             vendor_names = self.db.get_user_names()
         except Exception as exc:
             QMessageBox.warning(self, "无法获取外包方账号", f"查询 FTP 账号列表失败，请检查网络后重试：\n{exc}")
             return
-        if vendor not in vendor_names:
-            QMessageBox.warning(
-                self,
-                "外包方账号不存在",
-                f"「{vendor}」不是已有的 FTP 账号，请从下拉列表中选择。\n\n"
-                f"现有账号：{', '.join(vendor_names) or '（无）'}\n\n"
-                "如果是新的外包方，请先用 usermanager 创建账号。",
-            )
-            return
+        for vendor in self.vendors:
+            if vendor not in vendor_names:
+                QMessageBox.warning(
+                    self,
+                    "外包方账号不存在",
+                    f"「{vendor}」不是已有的 FTP 账号，请从下拉列表中选择。\n\n"
+                    f"现有账号：{', '.join(vendor_names) or '（无）'}\n\n"
+                    "如果是新的外包方，请先用 usermanager 创建账号。",
+                )
+                return
+        
         project_name_zh = project_name(self.project_id or "")
         # 先确认外包方、任务和将授权的组, 避免选错外包方给了错误权限
-        if not confirm_collect(self, self.project_name or project_name_zh, vendor, [row.component for row in self._rows]):
+        if not confirm_collect(self, self.project_name or project_name_zh, ', '.join(self.vendors), [row.component for row in self._rows]):
             return
         print("=" * 66)
-        print(f"[开始抓包] 项目: {project_name_zh} | 外包方: {vendor}")
+        print(f"[开始抓包] 项目: {project_name_zh} | 外包方: {', '.join(self.vendors)}")
         print(f"[开始抓包] 共 {len(self._rows)} 项任务:")
 
         # 把长耗时任务挪到子线程执行，避免卡住界面
@@ -578,7 +582,7 @@ class CollectorWindow(QMainWindow):
         self.start_btn.setEnabled(False)
 
         self._processor = Processor(total=len(components), parent=self)
-        self._collect_worker = CollectWorker(components, vendor, db=self.db)
+        self._collect_worker = CollectWorker(components, self.vendors, db=self.db)
         self._collect_thread = QThread(self)
         self._collect_thread.setObjectName("collect_worker_thread")
         self._collect_worker.moveToThread(self._collect_thread)

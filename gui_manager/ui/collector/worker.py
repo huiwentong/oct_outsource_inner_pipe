@@ -78,7 +78,7 @@ class CollectWorker(QObject):
     def __init__(
         self,
         components: list[StepComponent],
-        vendor: str,
+        vendor: list[str],
         db: Optional[Database] = None,
         parent=None,
     ):
@@ -125,7 +125,7 @@ class CollectWorker(QObject):
                         component.start_collection(self._vendor)
                         self._db.add_collection_history(
                             username=self._username,
-                            vendorname=self._vendor,
+                            vendorname=' '.join(self._vendor),
                             asset=component.entity,
                             assettype=component.entity_type,
                             step=component.step,
