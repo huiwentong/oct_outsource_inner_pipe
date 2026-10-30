@@ -93,8 +93,9 @@ class Component(StepComponent):
             manifest_data = self.get_manifest_data()
 
             publish_options = manifest_data['publish_options']
-            maya_file = publish_options['ma_file']
-            publish_options['ma_file'] = str(Path(root) / maya_file)
+            maya_file = publish_options.get('ma_file')
+            if maya_file:
+                publish_options['ma_file'] = str(Path(root) / maya_file)
             src_tex_files = publish_options.get('src_tex_files', [])
             publish_options['src_tex_files'] = [str(Path(root) / i) for i in src_tex_files] if src_tex_files else ["None"]
 

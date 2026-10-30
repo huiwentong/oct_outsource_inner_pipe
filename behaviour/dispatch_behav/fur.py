@@ -102,8 +102,9 @@ class Component(StepComponent):
             manifest_data = self.get_manifest_data()
 
             publish_options = manifest_data['publish_options']
-            maya_file = publish_options['ma_file']
-            publish_options['ma_file'] = str(Path(root) / maya_file)
+            maya_file = publish_options.get('ma_file')
+            if maya_file:
+                publish_options['ma_file'] = str(Path(root) / maya_file)
 
             publish_type = 'Publish' if maya_file else 'Dailies'
 

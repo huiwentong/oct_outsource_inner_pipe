@@ -93,9 +93,10 @@ class Component(StepComponent):
             manifest_data = self.get_manifest_data()
 
             publish_options = manifest_data['publish_options']
-            maya_file = publish_options['ma_file']
+            maya_file = publish_options.get('ma_file')
             zb_file =  publish_options.get('zb_file')
-            publish_options['ma_file'] = str(Path(root) / maya_file)
+            if maya_file:
+                publish_options['ma_file'] = str(Path(root) / maya_file)
             if zb_file:
                 publish_options['zb_file'] = str(Path(root) / zb_file)
 
