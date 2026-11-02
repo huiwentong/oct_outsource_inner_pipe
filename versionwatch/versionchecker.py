@@ -101,6 +101,8 @@ def check_all_sync(driver='/srv/i', ftp='/srv/ftp/oct'):
         'need_to_update': need_to_update
     }
     send_simple_message(msg_dict, '每日扫盘通知','034822000124675411')
+    send_simple_message(msg_dict, '每日扫盘通知','0634050800832375')
+    send_simple_message(msg_dict, '每日扫盘通知','630437304273891759')
 
 
 
