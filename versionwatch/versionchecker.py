@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, time
 from versionwatch.config import Settings
-from versionwatch.warning_msg import send_warning_message
+from versionwatch.warning_msg import send_warning_message, send_simple_message
 from versionwatch.hashing import hash_file
 from logger.core import watch_logger
 import traceback
@@ -96,8 +96,11 @@ def check_all_sync(driver='/srv/i', ftp='/srv/ftp/oct'):
                                 continue
                             if hash_file(ma_file) != hash_file(driver_ma_file):
                                 need_to_update.append(f'{project}|{entity_type}|{entity}|{step}|{rig_folder}')
-    print(error)
-    print(need_to_update)
+    msg_dict = {
+        'errors': error,
+        'need_to_update': need_to_update
+    }
+    send_simple_message(msg_dict, '每日扫盘通知','034822000124675411')
 
 
 
