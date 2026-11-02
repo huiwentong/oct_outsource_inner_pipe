@@ -56,7 +56,7 @@ def check_all_sync(driver='/srv/i', ftp='/srv/ftp/oct'):
     for project in os.listdir(ftp):
         for entity_type in os.listdir(os.path.join(ftp, project)):
             for entity in os.listdir(os.path.join(ftp, project, entity_type)):
-                js_file = os.path.join(ftp, project, entity_type,'default_path.json')
+                js_file = os.path.join(ftp, project, entity_type, entity, 'default_path.json')
                 if not os.path.exists(js_file): continue
 
                 with open(js_file, 'r') as f:
@@ -64,13 +64,16 @@ def check_all_sync(driver='/srv/i', ftp='/srv/ftp/oct'):
                     logger.info(f'扫盘程序找到了{js_file}')
                 
                 default_path_root = str(data['default_path']).lower().replace('i:', driver)
+                if not os.path.exists(default_path_root):
+                    error.append(f'没有找到{default_path_root}')
+                    continue
                 for step in os.listdir(os.path.join(ftp, project, entity_type, entity)):
                     if not os.path.isdir(os.path.join(ftp, project, entity_type, entity, step)): continue
                     logger.info(f'开始比对 {project}|{entity_type}|{entity}|{step}')
                     if 'rig' != step:
                         try:
                             usda_file = glob(os.path.join(ftp, project, entity_type, entity, step) + '/*.usda')[0]
-                        except:
+                        except IndexError:
                             logger.warning(f"扫盘过程中没有找到{os.path.join(ftp, project, entity_type, entity, step) + '/*.usda'}")
                             error.append(f"扫盘过程中没有找到{os.path.join(ftp, project, entity_type, entity, step) + '/*.usda'}")
                             continue
@@ -83,17 +86,18 @@ def check_all_sync(driver='/srv/i', ftp='/srv/ftp/oct'):
                         for rig_folder in os.listdir(os.path.join(ftp, project, entity_type, entity, step)):
                             try:
                                 ma_file = glob(os.path.join(ftp, project, entity_type, entity, step, rig_folder) + '/*.ma')[0]
-                            except:
+                            except IndexError:
                                 continue
                             try:
                                 driver_ma_file = glob(default_path_root + f'/{step}/{rig_folder}/*.ma')[0]
-                            except:
+                            except IndexError:
                                 logger.warning(f"扫盘过程中没有找到{default_path_root + f'/{step}/{rig_folder}/*.ma'}")
                                 error.append(f"扫盘过程中没有找到{default_path_root + f'/{step}/{rig_folder}/*.ma'}")
                                 continue
                             if hash_file(ma_file) != hash_file(driver_ma_file):
                                 need_to_update.append(f'{project}|{entity_type}|{entity}|{step}|{rig_folder}')
-
+    print(error)
+    print(need_to_update)
 
 
 
