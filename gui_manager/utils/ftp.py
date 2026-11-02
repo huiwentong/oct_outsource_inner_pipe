@@ -67,19 +67,22 @@ class FtpClient:
             except error_perm:
                 pass  # 目录已存在
 
-    def upload_file(self, local_path: Path, remote_path: str) -> None:
+    def upload_file(self, local_path: Path, remote_path: str) -> str:
+        """上传单个文件, 远程内容相同则跳过. 返回本地文件指纹 (供判断外包方是否有更新)."""
         remote_path = remote_path.replace("\\", "/")
         self.ensure_remote_dir(self._ftp, str(Path(remote_path).parent))
 
         db_remote_path = "oct/" + remote_path.split("oct/")[1]
         file_status = self.db.get_file_status(db_remote_path)
         cs = file_status.get('checksum') if file_status else None
-        if hash_file(local_path) == cs:
+        checksum = hash_file(local_path)
+        if checksum == cs:
             print(f"文件 {local_path} 与远程 {remote_path} 相同，跳过上传。")
-            return
+            return checksum
         with Path(local_path).open("rb") as fh:
             print(f"上传: {local_path} -> {remote_path}")
             self._ftp.storbinary(f"STOR {remote_path}", fh)
+        return checksum
 
 
     def upload_dir(self, local_dir: Path, remote_dir: str) -> None:

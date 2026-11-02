@@ -40,14 +40,14 @@ class _LogStream(io.TextIOBase):
 
 @contextmanager
 def _watch_uploads(on_start, on_done):
-    """抓包期间包一层 FtpClient.upload_file: 开始处理时回调 on_start, 上传或跳过完成后回调 on_done。"""
+    """抓包期间包一层 FtpClient.upload_file: 开始处理时回调 on_start, 上传或跳过完成后回调 on_done(路径, 指纹)。"""
     # ponytail: 临时替换类方法, 抓包期间全局生效; 只有本 worker 会上传, 结束即还原
     original = FtpClient.upload_file
 
     def wrapped(self, local_path, remote_path):
         on_start(str(remote_path))
         result = original(self, local_path, remote_path)  # 抛异常时不计入完成数
-        on_done(str(remote_path))
+        on_done(str(remote_path), result)
         return result
 
     FtpClient.upload_file = wrapped
@@ -102,16 +102,21 @@ class CollectWorker(QObject):
         done = 0
         error = ""
         files_total = files_done = 0
+        checksums: dict[str, str] = {}  # 这次发出去的 {FTP 相对路径 oct/...: 指纹}
+        changes: dict[str, Optional[dict]] = {}  # {外包方: 更新判断结果}, 判断失败的外包方为 None
 
         def on_start(remote_path: str) -> None:  # 只更新当前文件, 不计数
             self.file_progress.emit(files_done, max(files_total, files_done), f"正在处理: {remote_path}")
 
-        def on_done(remote_path: str) -> None:  # 上传成功或相同跳过后才计数
+        def on_done(remote_path: str, checksum: str) -> None:  # 上传成功或相同跳过后才计数
             nonlocal files_done
             files_done += 1
+            checksums[remote_path.replace("\\", "/").lstrip("/")] = checksum
             self.file_progress.emit(files_done, max(files_total, files_done), f"已完成: {remote_path}")
 
         try:
+            # 取数据库时间, 和 collection_history.create_time 是同一个钟; 之后写的发货单都属于本次
+            started = self._db.fetch_one("SELECT now() AS now;")["now"]
             print("正在统计文件数…")
             files_total = _count_files(self._components)
             self.file_progress.emit(0, files_total, "")
@@ -123,16 +128,18 @@ class CollectWorker(QObject):
                     print(f"===== ({index}/{total}) {message} =====")
                     try:
                         component.start_collection(self._vendor)
-                        self._db.add_collection_history(
-                            username=self._username,
-                            vendorname=' '.join(self._vendor),
-                            asset=component.entity,
-                            assettype=component.entity_type,
-                            step=component.step,
-                            description=component.description,
-                            transformer_files=list(component.transfer_folders.keys()),
-                            rely_groups=component.rely_assets + component.rely_steps + [component.project],
-                        )
+                        # 每个外包方各写一行发货单
+                        for vendor in self._vendor:
+                            self._db.add_collection_history(
+                                username=self._username,
+                                vendorname=vendor,
+                                asset=component.entity,
+                                assettype=component.entity_type,
+                                step=component.step,
+                                description=component.description,
+                                transformer_files=list(component.transfer_folders.keys()),
+                                rely_groups=component.rely_assets + component.rely_steps + [component.project],
+                            )
                     except Exception as exc:
                         error = f"第 {index}/{total} 项失败（{message}）：{exc} "+traceback.format_exc()
                         break
@@ -140,4 +147,33 @@ class CollectWorker(QObject):
         except Exception as exc:
             error = f"执行过程中发生错误：{exc} "+traceback.format_exc()
 
-        return {"ok": not error, "done": done, "total": total, "error": error}
+        if not error:
+            # 每个外包方相对自己上次拿到的内容判断; 判断失败不能挡住通知, 为 None 时该外包方的通知退回列出全部资产
+            for vendor in self._vendor:
+                try:
+                    changes[vendor] = self._db.vendor_entity_changes(vendor, checksums, started)
+                    for entity, c in sorted(changes[vendor].items()):
+                        print(f"[更新判断] {vendor} · {entity}: {c['status']}")
+                        for p in c["added"]:
+                            print(f"    新增: {p}")
+                        for p in c["updated"]:
+                            print(f"    有更新: {p}")
+                except Exception:
+                    changes[vendor] = None
+                    print(f"[更新判断] {vendor} 查询失败, 通知将列出全部资产: {traceback.format_exc()}")
+
+        # 经 completed 信号交给 main_window._on_collect_completed, 例:
+        # {
+        #     "ok": True,             # 全部任务成功; 任一项失败为 False
+        #     "done": 6,              # 已成功的任务数 (失败时停在出错那项之前)
+        #     "total": 6,             # 任务总数 = 实体 × 环节
+        #     "error": "",            # 失败时为 "第 3/6 项失败（dasheng · 绑定）：..." + 堆栈
+        #     "changes": {            # {外包方: 更新判断}, 失败时为 {}; 某家判断失败时值为 None
+        #         "tj_oct": {
+        #             "dasheng": {"status": "有更新", "added": [], "updated": ["oct/mk2/asset/dasheng/rig/a.ma"]},
+        #             "bajie": {"status": "新增", "added": ["oct/mk2/asset/bajie/mod/bajie.abc"], "updated": []},
+        #         },
+        #         "hwt_test": None,
+        #     },
+        # }
+        return {"ok": not error, "done": done, "total": total, "error": error, "changes": changes}

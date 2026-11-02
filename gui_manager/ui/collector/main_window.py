@@ -36,7 +36,7 @@ from ui.collector.task_row import TaskRow
 from ui.collector.processor import Processor, confirm_collect
 from ui.collector.worker import CollectWorker
 from ui.widgets import PopupStyledComboBox
-from utils.message import send_pack_collection_message, send_email_with_alibaba
+from utils.message import send_pack_collection_message, send_email_with_alibaba, pack_collection_text
 import getpass
 from ui.window_utils import keep_window_on_screen, load_app_icon
 
@@ -484,7 +484,6 @@ class CollectorWindow(QMainWindow):
 
 
     def vendor_changed(self, text: str) -> None:
-        self._update_state()
         all_vendors = []
         for i in range(self.vendor_combo.model().rowCount()):
             all_vendors.append(self.vendor_combo.model().data(self.vendor_combo.model().index(i, 0)))
@@ -498,14 +497,18 @@ class CollectorWindow(QMainWindow):
                 this_button.deleteLater()
                 index = self.dynamic_vendor_row.indexOf(button)
                 self.dynamic_vendor_row.takeAt(index)
+                collection._update_state()
             button.clicked.connect(lambda: delete_self(button, self))
             self.dynamic_vendor_row.insertWidget(1, button)
+        # 放在加入 self.vendors 之后, 按钮状态才按最新的外包方列表算
+        self._update_state()
 
 
     def _update_state(self) -> None:
         entities = self._checked_entities()
         steps = self._checked_steps()
-        vendor = self.vendor_combo.currentText().strip() if self.project_id else ""
+        # 授权/发货/通知都按 self.vendors, 不看下拉框里正在输入的文字
+        vendor = ", ".join(self.vendors) if self.project_id else ""
 
         valid_project = self.project_id is not None
         has_vendor = bool(vendor)
@@ -539,7 +542,7 @@ class CollectorWindow(QMainWindow):
     # ---------- 开始抓包 ----------
 
     def _start_collect(self) -> None:
-        if self._collecting or not self._rows:
+        if self._collecting or not self._rows or not self.vendors:
             return
 
         for row in self._rows:
@@ -615,6 +618,9 @@ class CollectorWindow(QMainWindow):
             )
             for _vendor in self.vendors:
                 vendor = self.db.get_user_contact(_vendor.strip())
+                if not vendor:
+                    print(f"找不到外包方 {_vendor} 的联系方式, 跳过通知")
+                    continue
                 description = ''
                 assets = ''
                 steps = set()
@@ -628,13 +634,21 @@ class CollectorWindow(QMainWindow):
                     'rely_assets': assets,
                     'rely_steps': ', '.join(list(steps)),
                     'user': getpass.getuser(),
+                    'changes': (result.get('changes') or {}).get(_vendor),  # 每个外包方用自己的更新判断
                 }
+                # 钉钉和邮件互不影响, 一个发失败不挡另一个, 也不挡下一个外包
                 if vendor.get('dingtalk_id'):
-                    ret = send_pack_collection_message(msg, vendor['dingtalk_id'])
+                    try:
+                        send_pack_collection_message(msg, vendor['dingtalk_id'])
+                    except Exception as exc:
+                        print(f"发送钉钉通知失败: {exc}")
                 if vendor.get('email'):
-                    ret = send_email_with_alibaba(msg, {'name': vendor['name'], 'email': vendor['email']})
-                    if ret.get('code') != 200:
-                        raise RuntimeError(f"发送邮件失败: {ret.get('msg')}")
+                    try:
+                        ret = send_email_with_alibaba(pack_collection_text(msg), {'name': vendor['name'], 'email': vendor['email']})
+                        if ret.get('code') != 200:
+                            print(f"发送邮件失败: {ret.get('msg')}")
+                    except Exception as exc:
+                        print(f"发送邮件失败: {exc}")
         else:
             self._processor.mark_finished(ok=False)
             QMessageBox.critical(

@@ -3,33 +3,45 @@ from datetime import datetime
 import json
 
 
+def pack_collection_text(msg):
+    """发包通知正文, 钉钉和邮件共用. 用标题+列表不用表格, 纯文本邮件里也能读.
+
+    msg['changes'] 是 Database.vendor_entity_changes 的结果; 为 None (判断失败) 时退回列出全部发包资产.
+    """
+    changes = msg.get('changes')
+    if changes is None:
+        assets = f"**发包资产**：{msg['rely_assets']}"
+    else:
+        names = lambda status: ', '.join(sorted(k for k, v in changes.items() if v['status'] == status)) or '无'
+        unchanged = sum(v['status'] == '未变' for v in changes.values())
+        assets = f"**本次发包**：共 {len(changes)} 个资产/镜头\n\n**新增**：{names('新增')}\n\n**有更新**：{names('有更新')}\n\n**未变**：共 {unchanged} 个资产/镜头"
+    description = '\n'.join(f'- {line}' for line in msg['description'].splitlines() if line.strip()) or '无'
+
+    return f"""# 🚀 十月文化给您更新了资产/环节物料！
+
+物料已发送成功，请进入ftp客户端进行查看！
+
+{assets}
+
+**发包环节**：{msg['rely_steps']}
+
+**备注信息**：
+
+{description}
+
+**发包人员**：{msg['user']}
+
+发送时间： {datetime.now():%Y-%m-%d %H:%M:%S}
+"""
+
+
 def send_pack_collection_message(msg, user):
     uid = user
     url = 'http://192.168.20.217:8080/ding/msg/simple'
 
-    mk_message = """
-# 🚀 十月文化给您更新了资产/环节物料！
-___
-物料已发送成功，请进入ftp客户端进行查看！
-***
-| 信息 | 内容 |
-| :--- | :---: | 
-| 备注信息 | {description} | 
-| 发包资产 | {rely_assets} | 
-| 发包环节 | {rely_steps} | 
-| 发包人员 | {user} | 
-***
-`发送时间： {datetime_now}`
-""".format(
-            description=msg['description'],
-            rely_assets=msg['rely_assets'],
-            rely_steps=msg['rely_steps'],
-            user=msg['user'],
-            datetime_now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
     post_data = {
         'title': '来自十月的发包通知' ,
-        'text': mk_message
+        'text': pack_collection_text(msg)
     }
 
     ret = requests.post(
