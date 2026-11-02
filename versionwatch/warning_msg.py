@@ -13,7 +13,7 @@ def send_warning_message(msg):
             url = 'http://192.168.20.217:8080/ding/msg/simple2'
 
             mk_message = f"""
-# 💥💥 外包服务框架中的behaviour模块出现了错误
+# 💥💥 外包服务框架中的versionwatch模块出现了错误
 ___
     {msg}
         """

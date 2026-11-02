@@ -40,6 +40,8 @@ services:
       - outsourcelogs:/var/log/outsource
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+      - /mnt/I:/srv/i:ro
+      - /mnt/W:/srv/w:ro
     depends_on:
       postgres:
         condition: service_healthy

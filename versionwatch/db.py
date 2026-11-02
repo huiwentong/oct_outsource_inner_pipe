@@ -12,9 +12,10 @@ import psycopg
 from psycopg.rows import dict_row
 
 from versionwatch.config import Settings
+from logger.core import watch_logger
 from versionwatch.events import FileEvent
 
-logger = logging.getLogger(__name__)
+logger = watch_logger
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS file_events (

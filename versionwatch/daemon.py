@@ -14,6 +14,7 @@ from versionwatch.fs_watch import FsWatcher
 from versionwatch.hash_scan import HashScanner
 from versionwatch.pipeline import Pipeline
 from versionwatch.recorder import Recorder
+from versionwatch.versionchecker import VersionChecker
 
 from versionwatch.warning_msg import send_warning_message
 from logger.core import watch_logger
@@ -43,6 +44,7 @@ async def _run(settings: Settings) -> None:
     recorder = Recorder(settings, open_connection)
     pipeline = Pipeline(settings, queue, recorder)
     tailer = FtpLogTailer(settings, queue)
+    vc = VersionChecker(settings)
 
     loop = asyncio.get_running_loop()
     stop = asyncio.Event()
@@ -60,6 +62,7 @@ async def _run(settings: Settings) -> None:
     tasks = [
         asyncio.create_task(pipeline.run(), name="pipeline"),
         asyncio.create_task(tailer.run(queue.put_nowait), name="ftp-log-tailer"),
+        asyncio.create_task(vc.run(), name="version-checker"),
     ]
 
     try:
@@ -68,6 +71,7 @@ async def _run(settings: Settings) -> None:
         logger.info("开始优雅退出...")
         pipeline.stop()
         tailer.close()
+        vc.close()
         try:
             await asyncio.wait_for(asyncio.shield(tasks[0]), timeout=settings.shutdown_grace_seconds)
         except asyncio.TimeoutError:
