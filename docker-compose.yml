@@ -66,6 +66,7 @@ services:
       - outsourcelogs:/var/log/outsource
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+      - /etc/ssl/private:/etc/ssl/private:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/get_user', timeout=2).close()"]
       interval: 5s
