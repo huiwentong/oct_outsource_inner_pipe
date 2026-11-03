@@ -28,7 +28,6 @@ start()
 def get_user(user_name: Optional[str] = None):
 
     users = FTPUserManager.get_user(user_name)
-    print(users)
     ulist = []
     for u in users:
         if not u: continue
@@ -51,7 +50,6 @@ def get_user(user_name: Optional[str] = None):
 def get_group(g_name: Optional[str] = None):
 
     gs = FTPUserManager.get_group(g_name)
-    print(gs)
     ulist = []
     for u in gs:
         if not u: continue

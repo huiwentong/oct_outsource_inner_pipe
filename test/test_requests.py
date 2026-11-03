@@ -7,7 +7,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_sse_stream():
     async with httpx.AsyncClient(base_url="http://192.168.20.211:8001") as client:
-        async with client.stream("GET", "/api/items/stream") as response:
+        async with client.stream("GET", "/items/stream") as response:
             assert response.status_code == 200
             assert response.headers["content-type"].startswith("text/event-stream")
 
