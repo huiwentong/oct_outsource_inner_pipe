@@ -42,7 +42,7 @@ class VersionChecker:
 
 
     async def check_all(self):
-        await asyncio.to_thread(check_all_sync, '/srv/i', str(self.setting.root_dir))
+        await asyncio.to_thread(check_all_sync, '/srv/i', str(self.setting.root_dir/'oct'))
 
 
 
