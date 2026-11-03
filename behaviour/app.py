@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.sse import EventSourceResponse, ServerSentEvent
+from collections.abc import AsyncIterable
 from . import logger
 import asyncio
 from contextlib import asynccontextmanager
@@ -80,3 +82,29 @@ def observe(manifest_path: str, vendor:str):
         "status": "queued",
         "event": asdict(event),
     }
+
+
+async def get_new_items(last_id: int):
+    await asyncio.sleep(2)
+    return [
+        {'id':123, 'name':'test'},
+        {'id':321, 'name':'test2'}
+    ]
+
+
+@app.get("/items/stream", response_class=EventSourceResponse)
+async def stream_items() -> AsyncIterable[ServerSentEvent]:
+    last_id = 0
+    while True:
+        items = await get_new_items(last_id)
+
+        for item in items:
+            last_id = item['id']
+            yield ServerSentEvent(
+                data={"id": item['id'], "name": item['name']},
+                event="item_update",
+                id=str(item['id'])
+            )
+        
+        if not items:
+            await asyncio.sleep(60)
