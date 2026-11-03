@@ -10,7 +10,7 @@ RUN mkdir -p /etc/nginx/certs \
         -addext "subjectAltName=IP:101.254.157.190"\
     && chmod 600 /etc/nginx/certs/privkey.pem
 
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 443
 
